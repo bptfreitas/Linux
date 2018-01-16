@@ -1,0 +1,13 @@
+[Unit]
+Description=Git automatic sync service
+Before=shutdown.target
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/bin/true
+ExecStop=/home/bruno/git.py -a commit push -f /home/bruno/.git-repositories
+
+[Install]
+WantedBy=shutdown.target
+Alias=git-sync.service
