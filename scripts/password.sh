@@ -1,30 +1,41 @@
 #!/bin/bash
 
-FILENAME=senhas.txt
-PASSWORD_ROOT=~/Documentos/Other
-TMP_DIR=/dev/shm
+debug=1
+
+if [ "`env | grep "PASSWORD_FILE"`" == "" ]; then
+	echo "\$PASSWORD_FILE not set - Aborting"
+	exit
+fi
+
+encfile=`basename $PASSWORD_FILE`
+plainfile=`basename $encfile .gpg`
+tmp_dir=/dev/shm
+
+[ 1 -eq $debug ] && echo "encfile: $encfile"
+[ 1 -eq $debug ] && echo "plainfile: $plainfile"
 
 regexp="[[:digit:]]{2,2}\:[[:digit:]]{2,2}\:[[:digit:]]{2,2}"
 
-cp $PASSWORD_ROOT/$FILENAME.gpg ${TMP_DIR}/$FILENAME.gpg
+cp $PASSWORD_FILE ${tmp_dir}/${encfile}
 
-gpg ${TMP_DIR}/$FILENAME.gpg
+gpg ${tmp_dir}/${encfile}
 
 if [ $? -eq 0 ]; then
-	lastMod=`stat -c %y ${TMP_DIR}/$FILENAME | egrep -o "$regexp"`
-	echo "last modification: $lastMod"
+	lastMod=`stat -c %y ${tmp_dir}/${plainfile} | egrep -o "$regexp"`
+	echo "time of last modification: $lastMod"
 
-	gedit /tmp/${FILENAME} &&
-	newMod=`stat -c %y ${TMP_DIR}/$FILENAME | egrep -o "$regexp"` &&
+	gedit ${tmp_dir}/${plainfile} &&
+	newMod=`stat -c %y ${tmp_dir}/${plainfile} | egrep -o "$regexp"` &&
 
-	echo "new modification: $newMod" &&\
+	echo "time of new modification: $newMod" &&\
 
 	if [ "$newMod" != "$lastMod" ]; then \
-		gpg -c ${TMP_DIR}/${FILENAME/.gpg/}
-		cp ${TMP_DIR}/$FILENAME.gpg $PASSWORD_ROOT/.
+		echo "encrypting file again ..."
+		gpg -c ${tmp_dir}/${plainfile}
+		cp ${tmp_dir}/${encfile} $PASSWORD_FILE
 	fi &&\
 
-	rm -f ${TMP_DIR}/$FILENAME ${TMP_DIR}/$FILENAME.gpg
+	rm -f ${tmp_dir}/${encfile} ${tmp_dir}/${plainfile}
 fi
 
 
