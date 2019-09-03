@@ -2,8 +2,7 @@
 
 # global variables
 STDOUT=/dev/null
-UBUNTU_VERSION=16.04
-
+UBUNTU_VERSION=18.04
 
 myinstall_pkgs()
 {	
@@ -16,7 +15,7 @@ myinstall_pkgs()
 
 
 	# package's installation
-	packages="$PWD/Ubuntu/$UBUNTU_VERSION/packages.txt"
+	packages="$PWD/pkg/Ubuntu/$UBUNTU_VERSION/packages"
 
 	if [ -f "$packages" ]; then 
 		ok_pkgs=`mktemp`
@@ -104,7 +103,7 @@ myinstall_env()
 {
 	bash_aliases="$PWD/bash_aliases"
 	scripts_folder="$PWD/scripts"
-	packages="$PWD/Ubuntu/$UBUNTU_VERSION/packages.txt"
+	packages="$PWD/pkg/Ubuntu/$UBUNTU_VERSION/packages"
 
 	if [ ! -f "$bash_aliases" ]; then
 		echo "bash_aliases file not found - aborting"
