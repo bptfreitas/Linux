@@ -2,7 +2,9 @@
 
 # global variables
 STDOUT=/dev/null
-UBUNTU_VERSION=18.04
+UBUNTU_VERSION=16.04
+
+packages="$PWD/pkg/Ubuntu/$UBUNTU_VERSION/packages"
 
 myinstall_pkgs()
 {	
@@ -13,9 +15,12 @@ myinstall_pkgs()
 	echo "Fazendo upgrade ... "
 	sudo apt-get -y upgrade
 
-
 	# package's installation
-	packages="$PWD/pkg/Ubuntu/$UBUNTU_VERSION/packages"
+	if [ ! -f $packages ]; then
+		echo "error: $packages not found"
+		return 1
+	fi
+	
 
 	if [ -f "$packages" ]; then 
 		ok_pkgs=`mktemp`
@@ -105,38 +110,51 @@ myinstall_env()
 	scripts_folder="$PWD/scripts"
 	packages="$PWD/pkg/Ubuntu/$UBUNTU_VERSION/packages"
 
-	if [ ! -f "$bash_aliases" ]; then
-		echo "bash_aliases file not found - aborting"
-		exit
-	fi
 
 	if [ ! -d "$scripts_folder" ]; then
-		echo "scripts folder not found - aborting"
-		exit
+		echo "scripts folder not found - aborting"		
 	fi
 
 	cp $HOME/.profile $HOME/.profile.`date +"%Y-%m-%d-%H-%M"`.tmp
 
 	# bash_aliases
-	if [ ! -s $HOME/.bash_aliases ]; then 
-		echo "setting .bash_aliases ..."
-		cd $HOME
-		mv $HOME/.bash_aliases $HOME/.bash_aliases-`date +"%Y-%m-%d-%H-%M"`
-		ln -s "$bash_aliases" .bash_aliases
+	if [ ! -s "$HOME/.bash_aliases" ] 
+
+		if [ -f "$bash_aliases" ]; then 
+
+			echo "setting .bash_aliases ..."
+			cd $HOME
+			mv $HOME/.bash_aliases $HOME/.bash_aliases-`date +"%Y-%m-%d-%H-%M"`
+			ln -s "$bash_aliases" .bash_aliases
+
+		else 
+			echo "$bash_aliases file not found"
+		fi
+
+	else
+		echo "symbolic link already created"
 	fi
 
-	# adding script folder to profile
-	if [ ! -s "$HOME/Linux/scripts" ]; then
-		cd $HOME
-		ln -s "$scripts_folder"
-		echo 'export PATH="$HOME/Linux/scripts:$PATH' >> ~/.profile
+	# adding script folder to PATH
+	if [ -d "$scripts_folder" ]; then
+		echo -n "scripts folder found, adding to PATH ..."
+
+		egrep -o -q "${scripts_folder}" ~/.profile
+		if [ ! $? -eq 0 ]; then
+			echo "export PATH='${scripts_folder}:\$PATH'" >> ~/.profile
+			echo "added"
+		else 
+			echo "already added"
+		fi		
 	fi
 
 	# adding custom env vars to profile
-	has_var=`grep -q 'INSTALLED_PKGS' $HOME/.profile`
+	grep -q 'INSTALLED_PKGS' $HOME/.profile
 	if [ $? -ne 0 ]; then
 		echo "adding global packages variable ..."
 		echo "export INSTALLED_PKGS=\"$packages\"" >> ~/.profile
+	else 
+		echo "installed packages environmental var already set"
 	fi		
 }
 
