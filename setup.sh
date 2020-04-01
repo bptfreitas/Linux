@@ -2,7 +2,7 @@
 
 # global variables
 STDOUT=/dev/null
-UBUNTU_VERSION=16.04
+UBUNTU_VERSION=18.04
 
 packages="$PWD/pkg/Ubuntu/$UBUNTU_VERSION/packages"
 
@@ -118,7 +118,7 @@ myinstall_env()
 	cp $HOME/.profile $HOME/.profile.`date +"%Y-%m-%d-%H-%M"`.tmp
 
 	# bash_aliases
-	if [ ! -s "$HOME/.bash_aliases" ] 
+	if [ ! -s "$HOME/.bash_aliases" ]; then 
 
 		if [ -f "$bash_aliases" ]; then 
 

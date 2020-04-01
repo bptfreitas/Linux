@@ -49,7 +49,7 @@ nfs-kernel-server
 openjdk-8-jdk
 openssl
 php
-***php7.0-mysql
+php-mysql
 pkg-config
 playonlinux
 python-bs4
@@ -77,3 +77,6 @@ wavemon
 wireshark
 wxpython
 xtightvncviewer
+samba
+mysql-server
+mysql-workbench
