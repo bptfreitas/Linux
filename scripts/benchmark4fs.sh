@@ -32,3 +32,30 @@ done } 2> results_small_del.tmp
 
 awk ' { if (NR==2) print $2 } ' results_small_del.tmp
 
+# size in megabytes
+LARGE_FILE_SZ=1024
+
+src_code="
+#include <stdio.h>
+
+int main(){
+    FILE *fd = NULL, i;
+    char data[512];
+
+    fd = fopen('$FS_MOUNT_POINT', 'w');
+
+    for ( i = 0; i < 512; data[i++] = 'X' );
+
+
+
+    fclose(fd);
+}
+";
+
+
+
+
+
+
+
+
