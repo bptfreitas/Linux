@@ -59,7 +59,7 @@ max-lease-time 7200; #determina o tempo que cada máquina pode usar um determina
 
 subnet 192.168.200.0 netmask 255.255.255.0 {
      range 192.168.200.101 192.168.200.200;  #faixa de IPs que o cliente pode usar.
-     option routers 192.168.200.100; #Este é o gateway padrão (neste caso).
+     option routers 192.168.200.1; #Este é o gateway padrão (neste caso).
      option broadcast-address 192.168.200.255; #Essa linha é o endereço de broadcast (neste caso).
 
     #Aqui você coloca os servidores DNS de terceiros ou seu DNS próprio configurado no BIND. Nesse caso coloquei o DNS do Google.
@@ -68,6 +68,18 @@ subnet 192.168.200.0 netmask 255.255.255.0 {
 }
 ' | sudo tee /etc/dhcp/dhcpd.conf
 
+echo "
+network:
+   ethernets:
+      enp0s3:
+         dhcp4: true
+      enp0s8:
+         addresses: [192.168.200.1/24]
+         dhcp4: false
+   version: 2
+" | sudo tee /etc/netplan/50-cloud-init.yaml
+
+sudo netplan apply
 
 echo "checking leases file ... "
 if [ ! -f /var/lib/dhcp/dhcpd.leases ]; then 
@@ -92,6 +104,8 @@ sudo iptables -A OUTPUT -o ${WAN} -p udp --dport 53 -j ACCEPT
 
 sudo iptables -A OUTPUT -o ${WAN} -d www.cefet-rj.br -j ACCEPT
 sudo iptables -A OUTPUT -o ${WAN} -d eadfriburgo.cefet-rj.br -j ACCEPT
+
+sudo iptables -P OUTPUT DROP
 
 sudo ifconfig ${WAN} down
 sudo ifconfig ${WAN} down
