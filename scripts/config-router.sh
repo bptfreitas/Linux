@@ -45,7 +45,7 @@ fi
 
 sudo cp /etc/dhcpd/dhcpd.conf /root/dhcpd.conf.bk
 
-echo "
+echo '
 # dhcpd.conf
 #
 # Configuration file for ISC dhcpd (see 'man dhcpd.conf')
@@ -66,7 +66,7 @@ subnet 192.168.200.0 netmask 255.255.255.0 {
     option domain-name-servers 8.8.8.8; 
     option domain-name-servers 8.8.4.4;
 }
-" > /etc/dhcpd/dhcpd.conf
+' | sudo tee /etc/dhcp/dhcpd.conf
 
 
 echo "checking leases file ... "
