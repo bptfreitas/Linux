@@ -47,7 +47,7 @@ if [ "`which dhcpd`" == "" ]; then
     exit
 fi
 
-sudo cp /etc/dhcpd/dhcpd.conf /root/dhcpd.conf.bk
+sudo cp /etc/dhcp/dhcpd.conf /root/dhcpd.conf.bk
 
 echo '
 # dhcpd.conf
@@ -97,7 +97,10 @@ if [ ! -f /var/lib/dhcp/dhcpd.leases ]; then
 #    sudo -u dhcpd chmod a+w /var/lib/dhcp/dhcpd.leases
 fi
 
-sudo -u dhcpd dhcpd
+sudo chown root:root /var/lib/dhcp/dhcpd.leases
+sudo chmod +w /var/lib/dhcp/dhcpd.leases
+sudo killall dhcpd
+sudo dhcpd
 
 sudo iptables -P INPUT ACCEPT
 sudo iptables -P OUTPUT ACCEPT
