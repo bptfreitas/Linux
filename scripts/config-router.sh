@@ -37,6 +37,10 @@ if [[ -n $1 ]]; then
     tail -1 "$1"
 fi
 
+############################
+# configuring dhcpd daemon #
+############################
+
 echo "checking dhcpd daemon ... "
 if [ "`which dhcpd`" == "" ]; then 
     echo "dhcpd daemon not found. Aborting. "
@@ -68,6 +72,10 @@ subnet 192.168.200.0 netmask 255.255.255.0 {
 }
 ' | sudo tee /etc/dhcp/dhcpd.conf
 
+#####################################
+# configuring network configuration #
+#####################################
+
 echo "
 network:
    ethernets:
@@ -91,24 +99,37 @@ fi
 
 sudo -u dhcpd dhcpd
 
+sudo iptables -P INPUT ACCEPT
+sudo iptables -P OUTPUT ACCEPT
+sudo iptables -P FORWARD ACCEPT
+sudo iptables -F 
+
+###################################
+# configuring router capabilities #
+###################################
+
 echo 1 | sudo tee /proc/sys/net/ipv4/ip_forward
 sudo iptables -t nat -A POSTROUTING -o ${WAN} -j MASQUERADE
 sudo iptables -A FORWARD -i ${LAN} -j ACCEPT
 
-# basic firewall for students
-sudo iptables -P INPUT ACCEPT
-sudo iptables -P OUTPUT ACCEPT
+###########################################
+# configuring basic firewall for students #
+###########################################
 
-sudo iptables -A OUTPUT -o ${WAN} -p tcp --dport 53 -j ACCEPT
-sudo iptables -A OUTPUT -o ${WAN} -p udp --dport 53 -j ACCEPT
+sudo iptables -A OUTPUT -p tcp --dport 53 -j ACCEPT
+sudo iptables -A OUTPUT -p udp --dport 53 -j ACCEPT
 
 sudo iptables -A OUTPUT -o ${WAN} -d www.cefet-rj.br -j ACCEPT
 sudo iptables -A OUTPUT -o ${WAN} -d eadfriburgo.cefet-rj.br -j ACCEPT
 
+sudo iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+sudo iptables -A OUTPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+sudo iptables -A FORWARD -m state --state ESTABLISHED,RELATED -j ACCEPT
+
 sudo iptables -P OUTPUT DROP
 
 sudo ifconfig ${WAN} down
-sudo ifconfig ${WAN} down
+sudo ifconfig ${LAN} down
 
-sudo ifconfig ${LAN} up
+sudo ifconfig ${WAN} up
 sudo ifconfig ${LAN} up
