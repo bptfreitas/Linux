@@ -43,7 +43,7 @@ if [ "`which dhcpd`" == "" ]; then
     exit
 fi
 
-sudo cp /etc/dhcpd/dhcpd.conf /root/dhcpd.conf.bk``
+sudo cp /etc/dhcpd/dhcpd.conf /root/dhcpd.conf.bk
 
 echo "
 # dhcpd.conf
@@ -63,8 +63,8 @@ subnet 192.168.200.0 netmask 255.255.255.0 {
      option broadcast-address 192.168.200.255; #Essa linha é o endereço de broadcast (neste caso).
 
     #Aqui você coloca os servidores DNS de terceiros ou seu DNS próprio configurado no BIND. Nesse caso coloquei o DNS do Google.
-     option domain-name-servers 8.8.8.8; 
-     option domain-name-servers 8.8.4.4;
+    option domain-name-servers 8.8.8.8; 
+    option domain-name-servers 8.8.4.4;
 }
 " > /etc/dhcpd/dhcpd.conf
 
@@ -73,8 +73,8 @@ echo "checking leases file ... "
 if [ ! -f /var/lib/dhcp/dhcpd.leases ]; then 
     echo "dhcpd daemon not found. Aborting. "
     exit 
-else
-    sudo -u dhcpd chmod a+w /var/lib/dhcp/dhcpd.leases
+#else
+#    sudo -u dhcpd chmod a+w /var/lib/dhcp/dhcpd.leases
 fi
 
 sudo -u dhcpd dhcpd
@@ -82,6 +82,16 @@ sudo -u dhcpd dhcpd
 echo 1 | sudo tee /proc/sys/net/ipv4/ip_forward
 sudo iptables -t nat -A POSTROUTING -o ${WAN} -j MASQUERADE
 sudo iptables -A FORWARD -i ${LAN} -j ACCEPT
+
+# basic firewall for students
+sudo iptables -P INPUT ACCEPT
+sudo iptables -P OUTPUT ACCEPT
+
+sudo iptables -A OUTPUT -o ${WAN} -p tcp --dport 53 -j ACCEPT
+sudo iptables -A OUTPUT -o ${WAN} -p udp --dport 53 -j ACCEPT
+
+sudo iptables -A OUTPUT -o ${WAN} -d www.cefet-rj.br -j ACCEPT
+sudo iptables -A OUTPUT -o ${WAN} -d eadfriburgo.cefet-rj.br -j ACCEPT
 
 sudo ifconfig ${WAN} down
 sudo ifconfig ${WAN} down
