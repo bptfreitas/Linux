@@ -122,6 +122,12 @@ sudo iptables -A OUTPUT -p udp --dport 53 -j ACCEPT
 sudo iptables -A OUTPUT -o ${WAN} -d www.cefet-rj.br -j ACCEPT
 sudo iptables -A OUTPUT -o ${WAN} -d eadfriburgo.cefet-rj.br -j ACCEPT
 
+if [ -f allowed-sites ]; then 
+	for site in $(cat allowed-sites); do
+		sudo iptables -A OUTPUT -o ${WAN} -d ${site} -j ACCEPT
+	done
+fi
+
 sudo iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
 sudo iptables -A OUTPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
 sudo iptables -A FORWARD -m state --state ESTABLISHED,RELATED -j ACCEPT
