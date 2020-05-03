@@ -1,5 +1,7 @@
 #!/bin/bash
 
+LAN=enp0s8
+WAN=enp0s3
 
 POSITIONAL=()
 while [[ $# -gt 0 ]]
@@ -47,7 +49,7 @@ if [ "`which dhcpd`" == "" ]; then
     exit
 fi
 
-sudo cp /etc/dhcp/dhcpd.conf /root/dhcpd.conf.bk
+sudo cp /etc/dhcp/dhcpd.conf /root/dhcpd.conf-`date +%Y-%m-%d_%H-%M-%S`.bk
 
 echo '
 # dhcpd.conf
@@ -72,29 +74,10 @@ subnet 192.168.200.0 netmask 255.255.255.0 {
 }
 ' | sudo tee /etc/dhcp/dhcpd.conf
 
-#####################################
-# configuring network configuration #
-#####################################
-
-echo "
-network:
-   ethernets:
-      enp0s3:
-         dhcp4: true
-      enp0s8:
-         addresses: [192.168.200.1/24]
-         dhcp4: false
-   version: 2
-" | sudo tee /etc/netplan/50-cloud-init.yaml
-
-sudo netplan apply
-
 echo "checking leases file ... "
 if [ ! -f /var/lib/dhcp/dhcpd.leases ]; then 
-    echo "dhcpd daemon not found. Aborting. "
-    exit 
-#else
-#    sudo -u dhcpd chmod a+w /var/lib/dhcp/dhcpd.leases
+    echo "dhcpd daemon leases file not found. Aborting. "
+    exit
 fi
 
 sudo chown root:root /var/lib/dhcp/dhcpd.leases
@@ -102,40 +85,96 @@ sudo chmod +w /var/lib/dhcp/dhcpd.leases
 sudo killall dhcpd
 sudo dhcpd
 
-sudo iptables -P INPUT ACCEPT
-sudo iptables -P OUTPUT ACCEPT
-sudo iptables -P FORWARD ACCEPT
-sudo iptables -F 
+
+################################
+# configuring network settings #
+################################
+
+echo "
+network:
+   ethernets:
+      ${WAN}:
+         dhcp4: true
+      ${LAN}:
+         addresses: [192.168.200.1/24]
+         dhcp4: false
+   version: 2
+" | sudo tee /etc/netplan/50-cloud-init.yaml
+
+sudo netplan apply
 
 ###################################
 # configuring router capabilities #
 ###################################
 
+# flushing all firewall status
+sudo iptables -P INPUT ACCEPT
+sudo iptables -P OUTPUT ACCEPT
+sudo iptables -P FORWARD ACCEPT
+sudo iptables -F
+
 echo 1 | sudo tee /proc/sys/net/ipv4/ip_forward
 sudo iptables -t nat -A POSTROUTING -o ${WAN} -j MASQUERADE
-sudo iptables -A FORWARD -i ${LAN} -j ACCEPT
+
+# allow DNS from LAN
+sudo iptables -A FORWARD -i ${LAN} -p udp --dport 53 -j ACCEPT
+sudo iptables -A FORWARD -i ${LAN} -p tcp --dport 53 -j ACCEPT
+
+# allow selected sites from LAN
+sudo iptables -A FORWARD -i ${LAN} -d www.cefet-rj.br -j ACCEPT
+sudo iptables -A FORWARD -i ${LAN} -d eadfriburgo.cefet-rj.br -j ACCEPT
+
+if [ -f allowed-sites ]; then 
+	for site in $(cat allowed-sites); do
+		sudo iptables -A FORWARD -i ${LAN} -d ${site} -j ACCEPT
+	done
+fi
+
+sudo iptables -A FORWARD -i ${LAN} -j REJECT
 
 ###########################################
 # configuring basic firewall for students #
 ###########################################
 
+# allow ICMP
+
+## sudo iptables -A OUTPUT -p icmp -j ACCEPT
+
+# allow DNS
+
 sudo iptables -A OUTPUT -p tcp --dport 53 -j ACCEPT
 sudo iptables -A OUTPUT -p udp --dport 53 -j ACCEPT
 
-sudo iptables -A OUTPUT -o ${WAN} -d www.cefet-rj.br -j ACCEPT
-sudo iptables -A OUTPUT -o ${WAN} -d eadfriburgo.cefet-rj.br -j ACCEPT
+sudo iptables -A INPUT -p tcp --dport 53 -j ACCEPT
+sudo iptables -A INPUT -p udp --dport 53 -j ACCEPT
 
-if [ -f allowed-sites ]; then 
-	for site in $(cat allowed-sites); do
-		sudo iptables -A OUTPUT -o ${WAN} -d ${site} -j ACCEPT
-	done
-fi
+# allow HTTP/HTTPS
+
+sudo iptables -A OUTPUT -p tcp --dport 80 -j ACCEPT
+sudo iptables -A OUTPUT -p udp --dport 80 -j ACCEPT
+sudo iptables -A INPUT -p tcp --dport 80 -j ACCEPT
+sudo iptables -A INPUT -p udp --dport 80 -j ACCEPT
+
+sudo iptables -A OUTPUT -p tcp --dport 443 -j ACCEPT
+sudo iptables -A OUTPUT -p udp --dport 443 -j ACCEPT
+sudo iptables -A INPUT -p tcp --dport 443 -j ACCEPT
+sudo iptables -A INPUT -p udp --dport 443 -j ACCEPT
+
+
+# accepts already established connections and related new connections on all chains
 
 sudo iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
 sudo iptables -A OUTPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
 sudo iptables -A FORWARD -m state --state ESTABLISHED,RELATED -j ACCEPT
 
+## sudo iptables -t filter -A OUTPUT -j REJECT --reject-with tcp-reset
+## sudo iptables -t filter -A INPUT -j REJECT --reject-with tcp-reset
+
+sudo iptables -P INPUT DROP
+sudo iptables -P FORWARD DROP
 sudo iptables -P OUTPUT DROP
+
+# restarts interfaces 
 
 sudo ifconfig ${WAN} down
 sudo ifconfig ${LAN} down
