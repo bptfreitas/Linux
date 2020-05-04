@@ -1,86 +1,99 @@
 #!/bin/bash
 
-debug=1
-type=aluno
+debug=0
+WITH_VPN=0
 
-[ $debug -eq 1 ] && sudo iptables -F 
+while [[ $# -gt 0 ]]
+do
+    key="$1"
 
-######################################
-# setting firewall for internet only #
-######################################
-if [ $type == "internet" ]; then
+    case $key in
+		# with vpn discards OUTPUT filter
+        --with-vpn)
+        WITH_VPN=1
+        shift # past argument
+        ;;
 
-    sudo iptables -P INPUT DROP
-    sudo iptables -P OUTPUT DROP
+		# unknown option
+        *)    
+        POSITIONAL+=("$1") # save it in an array for later
+        shift # past argument
+        ;;
+    esac
+done
 
-    # DNS
-    sudo iptables -A INPUT -p tcp --dport 53 -j ACCEPT
-    sudo iptables -A INPUT -p udp --dport 53 -j ACCEPT
-    sudo iptables -A OUTPUT -p tcp --dport 53 -j ACCEPT
-    sudo iptables -A OUTPUT -p udp --dport 53 -j ACCEPT
+sudo iptables -F INPUT
+sudo iptables -F FORWARD
+[ $WITH_VPN -eq 0 ] && sudo iptables -F OUTPUT
 
-    if [ $debug -eq 1 ]; then 
-        sudo iptables -t raw -A PREROUTING -p tcp --dport 53 -j TRACE
-        sudo iptables -t raw -A PREROUTING -p udp --dport 53 -j TRACE
-        sudo iptables -t raw -A INPUT -p tcp --dport 53 -j TRACE
-        sudo iptables -t raw -A INPUT -p udp --dport 53 -j TRACE    
-        sudo iptables -t raw -A OUTPUT -p tcp --dport 53 -j TRACE
-        sudo iptables -t raw -A OUTPUT -p udp --dport 53 -j TRACE
-    fi
+# temporary firewall permissions
+sudo iptables -P INPUT ACCEPT
+[ $WITH_VPN -eq 0 ] && sudo iptables -P OUTPUT ACCEPT
 
-    # HTTP
-    sudo iptables -A INPUT -p tcp --dport 80 -j ACCEPT
-    sudo iptables -A INPUT -p udp --dport 80 -j ACCEPT
-    sudo iptables -A OUTPUT -p tcp --dport 80 -j ACCEPT
-    sudo iptables -A OUTPUT -p udp --dport 80 -j ACCEPT
+# allow outgoing ICMP
+# sudo iptables -A INPUT -p icmp -j ACCEPT
+[ $WITH_VPN -eq 0 ] && sudo iptables -I OUTPUT 1 -p icmp -j ACCEPT
 
-    if [ $debug -eq 1 ]; then 
-        sudo iptables -t raw -A PREROUTING -p tcp --dport 80 -j TRACE
-        sudo iptables -t raw -A PREROUTING -p udp --dport 80 -j TRACE
-        sudo iptables -t raw -A INPUT -p tcp --dport 80 -j TRACE
-        sudo iptables -t raw -A INPUT -p udp --dport 80 -j TRACE    
-        sudo iptables -t raw -A OUTPUT -p tcp --dport 80 -j TRACE
-        sudo iptables -t raw -A OUTPUT -p udp --dport 80 -j TRACE
-    fi
+# allow DNS
+sudo iptables -A INPUT -p tcp --sport 53 --dport 53 -j ACCEPT
+[ $WITH_VPN -eq 0 ] && sudo iptables -A OUTPUT -p tcp --sport 53 --dport 53 -j ACCEPT
 
-    # HTTPS
-    sudo iptables -A INPUT -p tcp --dport 443 -j ACCEPT
-    sudo iptables -A INPUT -p udp --dport 443 -j ACCEPT
-    sudo iptables -A OUTPUT -p tcp --dport 443 -j ACCEPT
-    sudo iptables -A OUTPUT -p udp --dport 443 -j ACCEPT
+sudo iptables -A INPUT -p udp --sport 53 --dport 53 -j ACCEPT
+[ $WITH_VPN -eq 0 ] && sudo iptables -A OUTPUT -p udp --sport 53 --dport 53 -j ACCEPT
 
-    if [ $debug -eq 1 ]; then 
-        sudo iptables -t raw -A PREROUTING -p tcp --dport 443 -j TRACE
-        sudo iptables -t raw -A PREROUTING -p udp --dport 443 -j TRACE
-        sudo iptables -t raw -A INPUT -p tcp --dport 443 -j TRACE
-        sudo iptables -t raw -A INPUT -p udp --dport 443 -j TRACE
-        sudo iptables -t raw -A OUTPUT -p tcp --dport 443 -j TRACE
-        sudo iptables -t raw -A OUTPUT -p udp --dport 443 -j TRACE
-    fi
-
-    exit
-fi # fim - firewall de internet
-
-
-#################################################
-# setting firewall for internet use by students #
-#################################################
-if [ "$type" == "aluno" ]; then 
-    sudo iptables -P INPUT ACCEPT
-    sudo iptables -P OUTPUT ACCEPT
-    
-    sudo iptables -A OUTPUT -p tcp --dport 53 -j ACCEPT
-    sudo iptables -A OUTPUT -p udp --dport 53 -j ACCEPT
-
-    sudo iptables -A OUTPUT -d www.cefet-rj.br -j ACCEPT
-    sudo iptables -A OUTPUT -d eadfriburgo.cefet-rj.br -j ACCEPT
-
-    sudo iptables -P OUTPUT DROP
+if [ $debug -eq 1 ]; then 
+    sudo iptables -t raw -A PREROUTING -p tcp --dport 53 -j TRACE
+    sudo iptables -t raw -A PREROUTING -p udp --dport 53 -j TRACE
+    sudo iptables -t raw -A INPUT -p tcp --dport 53 -j TRACE
+    sudo iptables -t raw -A INPUT -p udp --dport 53 -j TRACE    
+    sudo iptables -t raw -A OUTPUT -p tcp --dport 53 -j TRACE
+    sudo iptables -t raw -A OUTPUT -p udp --dport 53 -j TRACE
 fi
+
+# HTTP
+sudo iptables -A INPUT -p tcp --dport 80 -j ACCEPT
+[ $WITH_VPN -eq 0 ] && sudo iptables -A OUTPUT -p tcp --dport 80 -j ACCEPT
+
+sudo iptables -A INPUT -p udp --dport 80 -j ACCEPT
+[ $WITH_VPN -eq 0 ] && sudo iptables -A OUTPUT -p udp --dport 80 -j ACCEPT
+
+if [ $debug -eq 1 ]; then 
+    sudo iptables -t raw -A PREROUTING -p tcp --dport 80 -j TRACE
+    sudo iptables -t raw -A PREROUTING -p udp --dport 80 -j TRACE
+    sudo iptables -t raw -A INPUT -p tcp --dport 80 -j TRACE
+    sudo iptables -t raw -A INPUT -p udp --dport 80 -j TRACE    
+    sudo iptables -t raw -A OUTPUT -p tcp --dport 80 -j TRACE
+    sudo iptables -t raw -A OUTPUT -p udp --dport 80 -j TRACE
+fi
+
+# HTTPS
+sudo iptables -A INPUT -p tcp --dport 443 -j ACCEPT
+[ $WITH_VPN -eq 0 ] && sudo iptables -A OUTPUT -p udp --dport 443 -j ACCEPT
+
+sudo iptables -A INPUT -p udp --dport 443 -j ACCEPT
+[ $WITH_VPN -eq 0 ] && sudo iptables -A OUTPUT -p tcp --dport 443 -j ACCEPT
+
+if [ $debug -eq 1 ]; then 
+    sudo iptables -t raw -A PREROUTING -p tcp --dport 443 -j TRACE
+    sudo iptables -t raw -A PREROUTING -p udp --dport 443 -j TRACE
+    sudo iptables -t raw -A INPUT -p tcp --dport 443 -j TRACE
+    sudo iptables -t raw -A INPUT -p udp --dport 443 -j TRACE
+    sudo iptables -t raw -A OUTPUT -p tcp --dport 443 -j TRACE
+    sudo iptables -t raw -A OUTPUT -p udp --dport 443 -j TRACE
+fi
+
+# default policy is DROP to all
+sudo iptables -P INPUT DROP
+sudo iptables -P FORWARD DROP
+[ $WITH_VPN -eq 0 ] && sudo iptables -P OUTPUT DROP
 
 sudo iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
 sudo iptables -A OUTPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
-sudo iptables -A FORWARD -m state --state ESTABLISHED,RELATED -j ACCEPT
+## sudo iptables -A FORWARD -m state --state ESTABLISHED,RELATED -j ACCEPT
 
-[ $debug -eq 1 ] && sudo iptables -L
+# send REJECT answers for attempted connections on INPUT and FORWARD chains
+sudo iptables -A INPUT -j REJECT --reject-with tcp-reset
+sudo iptables -A FORWARD -j REJECT --reject-with tcp-reset
+
+sudo iptables -L
 
