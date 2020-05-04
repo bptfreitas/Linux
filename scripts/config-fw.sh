@@ -88,7 +88,7 @@ sudo iptables -P FORWARD DROP
 [ $WITH_VPN -eq 0 ] && sudo iptables -P OUTPUT DROP
 
 sudo iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
-sudo iptables -A OUTPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+[ $WITH_VPN -eq 0 ] && sudo iptables -A OUTPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
 ## sudo iptables -A FORWARD -m state --state ESTABLISHED,RELATED -j ACCEPT
 
 # send REJECT answers for attempted connections on INPUT and FORWARD chains
