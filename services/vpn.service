@@ -6,8 +6,8 @@ After=network.target
 [Service]
 Type=simple
 Restart=always
-ExecStart=SERVICES_FOLDER/scripts/vpn-connect.sh start
-ExecStop=SERVICES_FOLDER/scripts/vpn-connect.sh stop
+ExecStart=SERVICES_FOLDER/scripts/config-vpn.sh start
+ExecStop=SERVICES_FOLDER/scripts/config-vpn.sh stop
 
 [Install]
 WantedBy=multi-user.target
