@@ -1,0 +1,12 @@
+# Contents of /etc/systemd/system/vpn.service
+[Unit]
+Description=Windscribe VPN
+After=network.target
+
+[Service]
+Type=simple
+Restart=always
+ExecStart=/home/bruno/Projetos/Linux/scripts/vpn-connect.sh
+
+[Install]
+WantedBy=multi-user.target

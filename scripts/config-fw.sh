@@ -1,7 +1,7 @@
 #!/bin/bash
 
 debug=0
-WITH_VPN=0
+CONF_OUTPUT=0
 
 while [[ $# -gt 0 ]]
 do
@@ -9,8 +9,8 @@ do
 
     case $key in
 		# with vpn discards OUTPUT filter
-        --with-vpn)
-        WITH_VPN=1
+        --output)
+        CONF_OUTPUT=1
         shift # past argument
         ;;
 
@@ -22,24 +22,38 @@ do
     esac
 done
 
+#######################
+# INPUT configuration #
+#######################
+
 sudo iptables -F INPUT
-sudo iptables -F FORWARD
-[ $WITH_VPN -eq 0 ] && sudo iptables -F OUTPUT
 
 # temporary firewall permissions
 sudo iptables -P INPUT ACCEPT
-[ $WITH_VPN -eq 0 ] && sudo iptables -P OUTPUT ACCEPT
 
 # allow outgoing ICMP
 # sudo iptables -A INPUT -p icmp -j ACCEPT
-[ $WITH_VPN -eq 0 ] && sudo iptables -I OUTPUT 1 -p icmp -j ACCEPT
 
 # allow DNS
 sudo iptables -A INPUT -p tcp --sport 53 --dport 53 -j ACCEPT
-[ $WITH_VPN -eq 0 ] && sudo iptables -A OUTPUT -p tcp --sport 53 --dport 53 -j ACCEPT
-
 sudo iptables -A INPUT -p udp --sport 53 --dport 53 -j ACCEPT
-[ $WITH_VPN -eq 0 ] && sudo iptables -A OUTPUT -p udp --sport 53 --dport 53 -j ACCEPT
+
+# allow incoming HTTP
+sudo iptables -A INPUT -p tcp --dport 80 -j ACCEPT
+sudo iptables -A INPUT -p udp --dport 80 -j ACCEPT
+
+# allow incoming HTTPS
+sudo iptables -A INPUT -p tcp --dport 443 -j ACCEPT
+sudo iptables -A INPUT -p udp --dport 443 -j ACCEPT
+
+# allow related and established connections
+sudo iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+
+# send REJECT answers for all other connections
+sudo iptables -A INPUT -j REJECT --reject-with tcp-reset
+
+# default policy is DROP to all
+sudo iptables -P INPUT DROP
 
 if [ $debug -eq 1 ]; then 
     sudo iptables -t raw -A PREROUTING -p tcp --dport 53 -j TRACE
@@ -48,32 +62,14 @@ if [ $debug -eq 1 ]; then
     sudo iptables -t raw -A INPUT -p udp --dport 53 -j TRACE    
     sudo iptables -t raw -A OUTPUT -p tcp --dport 53 -j TRACE
     sudo iptables -t raw -A OUTPUT -p udp --dport 53 -j TRACE
-fi
 
-# HTTP
-sudo iptables -A INPUT -p tcp --dport 80 -j ACCEPT
-[ $WITH_VPN -eq 0 ] && sudo iptables -A OUTPUT -p tcp --dport 80 -j ACCEPT
-
-sudo iptables -A INPUT -p udp --dport 80 -j ACCEPT
-[ $WITH_VPN -eq 0 ] && sudo iptables -A OUTPUT -p udp --dport 80 -j ACCEPT
-
-if [ $debug -eq 1 ]; then 
     sudo iptables -t raw -A PREROUTING -p tcp --dport 80 -j TRACE
     sudo iptables -t raw -A PREROUTING -p udp --dport 80 -j TRACE
     sudo iptables -t raw -A INPUT -p tcp --dport 80 -j TRACE
     sudo iptables -t raw -A INPUT -p udp --dport 80 -j TRACE    
     sudo iptables -t raw -A OUTPUT -p tcp --dport 80 -j TRACE
     sudo iptables -t raw -A OUTPUT -p udp --dport 80 -j TRACE
-fi
 
-# HTTPS
-sudo iptables -A INPUT -p tcp --dport 443 -j ACCEPT
-[ $WITH_VPN -eq 0 ] && sudo iptables -A OUTPUT -p udp --dport 443 -j ACCEPT
-
-sudo iptables -A INPUT -p udp --dport 443 -j ACCEPT
-[ $WITH_VPN -eq 0 ] && sudo iptables -A OUTPUT -p tcp --dport 443 -j ACCEPT
-
-if [ $debug -eq 1 ]; then 
     sudo iptables -t raw -A PREROUTING -p tcp --dport 443 -j TRACE
     sudo iptables -t raw -A PREROUTING -p udp --dport 443 -j TRACE
     sudo iptables -t raw -A INPUT -p tcp --dport 443 -j TRACE
@@ -82,18 +78,44 @@ if [ $debug -eq 1 ]; then
     sudo iptables -t raw -A OUTPUT -p udp --dport 443 -j TRACE
 fi
 
-# default policy is DROP to all
-sudo iptables -P INPUT DROP
-sudo iptables -P FORWARD DROP
-[ $WITH_VPN -eq 0 ] && sudo iptables -P OUTPUT DROP
+#########################
+# FORWARD configuration #
+#########################
 
-sudo iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
-[ $WITH_VPN -eq 0 ] && sudo iptables -A OUTPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
-## sudo iptables -A FORWARD -m state --state ESTABLISHED,RELATED -j ACCEPT
-
-# send REJECT answers for attempted connections on INPUT and FORWARD chains
-sudo iptables -A INPUT -j REJECT --reject-with tcp-reset
+sudo iptables -A FORWARD -m state --state ESTABLISHED,RELATED -j ACCEPT 
 sudo iptables -A FORWARD -j REJECT --reject-with tcp-reset
+sudo iptables -P FORWARD DROP
+
+########################
+# OUTPUT configuration #
+########################
+
+if [ ${CONF_OUTPUT} -eq 1 ]; then
+    # temporary ACCEPT policy
+    sudo iptables -F OUTPUT
+    sudo iptables -P OUTPUT ACCEPT
+
+    # allow outgoing DNS
+    sudo iptables -A OUTPUT -p udp --sport 53 --dport 53 -j ACCEPT
+    sudo iptables -A OUTPUT -p tcp --sport 53 --dport 53 -j ACCEPT
+
+    # allow outgoing ICMP
+    sudo iptables -I OUTPUT 1 -p icmp -j ACCEPT
+
+    # allow outgoing HTTP
+    sudo iptables -A OUTPUT -p tcp --dport 80 -j ACCEPT
+    sudo iptables -A OUTPUT -p udp --dport 80 -j ACCEPT
+
+    # allow outgoing HTTPS
+    sudo iptables -A OUTPUT -p udp --dport 443 -j ACCEPT
+    sudo iptables -A OUTPUT -p tcp --dport 443 -j ACCEPT
+
+    # default policy is DROP
+    sudo iptables -P OUTPUT DROP
+
+    # allow related and estabilished connections
+    sudo iptables -A OUTPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+fi
 
 sudo iptables -L
 
