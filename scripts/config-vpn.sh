@@ -12,6 +12,7 @@ start)
 		windscribe status | grep -q CONNECTED
 		if [ $? -eq 0 ]; then
 			echo "`date +%c`: windscribe connected" # >> $LOG
+			break
 		else
 			sleep ${timeout}
 			timeout=$(( timeout * 2 ))

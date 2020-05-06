@@ -22,21 +22,23 @@ do
     esac
 done
 
+
+# temporary firewall permissions
+sudo iptables -P INPUT ACCEPT
+sudo iptables -P FORWARD ACCEPT
+
 #######################
 # INPUT configuration #
 #######################
 
 sudo iptables -F INPUT
 
-# temporary firewall permissions
-sudo iptables -P INPUT ACCEPT
-
 # allow outgoing ICMP
 # sudo iptables -A INPUT -p icmp -j ACCEPT
 
 # allow DNS
-sudo iptables -A INPUT -p tcp --sport 53 --dport 53 -j ACCEPT
-sudo iptables -A INPUT -p udp --sport 53 --dport 53 -j ACCEPT
+sudo iptables -A INPUT -p tcp --dport 53 -j ACCEPT
+sudo iptables -A INPUT -p udp --dport 53 -j ACCEPT
 
 # allow incoming HTTP
 sudo iptables -A INPUT -p tcp --dport 80 -j ACCEPT
@@ -50,7 +52,8 @@ sudo iptables -A INPUT -p udp --dport 443 -j ACCEPT
 sudo iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
 
 # send REJECT answers for all other connections
-sudo iptables -A INPUT -j REJECT --reject-with tcp-reset
+sudo iptables -A INPUT -p tcp -j REJECT --reject-with tcp-reset
+sudo iptables -A INPUT -p udp -j REJECT --reject-with icmp-host-unreachable
 
 # default policy is DROP to all
 sudo iptables -P INPUT DROP
@@ -83,7 +86,9 @@ fi
 #########################
 
 sudo iptables -A FORWARD -m state --state ESTABLISHED,RELATED -j ACCEPT 
-sudo iptables -A FORWARD -j REJECT --reject-with tcp-reset
+sudo iptables -A FORWARD -p tcp -j REJECT --reject-with tcp-reset
+sudo iptables -A FORWARD -p udp -j REJECT --reject-with icmp-host-unreachable
+
 sudo iptables -P FORWARD DROP
 
 ########################
@@ -110,11 +115,11 @@ if [ ${CONF_OUTPUT} -eq 1 ]; then
     sudo iptables -A OUTPUT -p udp --dport 443 -j ACCEPT
     sudo iptables -A OUTPUT -p tcp --dport 443 -j ACCEPT
 
-    # default policy is DROP
-    sudo iptables -P OUTPUT DROP
-
     # allow related and estabilished connections
     sudo iptables -A OUTPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+
+    # default policy is DROP
+    sudo iptables -P OUTPUT DROP    
 fi
 
 sudo iptables -L
