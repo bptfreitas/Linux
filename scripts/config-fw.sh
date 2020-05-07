@@ -85,6 +85,9 @@ fi
 # FORWARD configuration #
 #########################
 
+sudo iptables -F FORWARD
+sudo iptables -P FORWARD ACCEPT
+
 sudo iptables -A FORWARD -m state --state ESTABLISHED,RELATED -j ACCEPT 
 sudo iptables -A FORWARD -p tcp -j REJECT --reject-with tcp-reset
 sudo iptables -A FORWARD -p udp -j REJECT --reject-with icmp-host-unreachable

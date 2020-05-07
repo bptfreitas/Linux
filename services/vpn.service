@@ -2,6 +2,7 @@
 [Unit]
 Description=Starts VPN service
 After=network.target
+Requires=network.target
 
 [Service]
 Type=simple

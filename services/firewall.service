@@ -1,7 +1,8 @@
 # Contents of /etc/systemd/system/firewall.service
 [Unit]
 Description=Configures Firewall
-After=vpn.target
+After=vpn.target network.target
+Requires=network.target
 
 [Service]
 Type=simple
