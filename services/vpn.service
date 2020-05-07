@@ -1,12 +1,13 @@
 # Contents of /etc/systemd/system/vpn.service
 [Unit]
 Description=Starts VPN service
-After=network.target
+After=network.target firewall.service
 Requires=network.target
 
 [Service]
-Type=simple
-Restart=always
+Type=oneshot
+# Restart=always
+RemainAfterExit=yes
 ExecStart=SERVICES_FOLDER/scripts/config-vpn.sh start
 ExecStop=SERVICES_FOLDER/scripts/config-vpn.sh stop
 

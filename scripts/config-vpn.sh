@@ -30,7 +30,7 @@ start)
 
 stop)
 	echo "Finishing service" 2>&1 
-	sudo windscribe disconnect
+	windscribe disconnect
 	sudo iptables -F OUTPUT
 	sudo iptables -P OUTPUT ACCEPT 
 	;;

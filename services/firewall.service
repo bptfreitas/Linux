@@ -1,13 +1,15 @@
 # Contents of /etc/systemd/system/firewall.service
 [Unit]
 Description=Configures Firewall
-After=vpn.target network.target
+After=network.target
 Requires=network.target
 
 [Service]
-Type=simple
-Restart=always
-ExecStart=SERVICES_FOLDER/scripts/config-fw.sh --with-vpn
+Type=oneshot
+# Restart=always
+RemainAfterExit=yes
+ExecStart=SERVICES_FOLDER/scripts/config-fw.sh start --with-vpn
+ExecStop=SERVICES_FOLDER/scripts/config-fw.sh stop --with-vpn
 
 [Install]
 WantedBy=multi-user.target

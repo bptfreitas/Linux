@@ -8,6 +8,8 @@ services_lst=/tmp/services.lst
 
 echo "Root dir: ${rootdir}"
 
+# sed 's/^#.*\\n$//g' services.conf
+
 > ${services_lst}
 
 for service_conf in $(cat services.conf); do
@@ -16,17 +18,30 @@ for service_conf in $(cat services.conf); do
 	space=`echo "${service_conf}" | cut -f2 -d:`
 
 	echo "${service}" >> /tmp/services.lst
-	
-	echo "Installing \"${service}\" on \"${space}\" space ... "
 
-	continue
+	echo "Stopping and disabling ${service} ... "
 
 	sudo systemctl stop ${service}
 	sudo systemctl disable ${service}
 
+	echo "Installing \"${service}\" on \"${space}\" space ... "
+
 	sed -e "s/SERVICES_FOLDER/${rootdir//\//\\\/}/g" ${service} > /tmp/${service}.tmp
 
-	sudo mv /tmp/${service}.tmp /etc/systemd/${space}/${service}
+	case ${space} in
+		system)
+			sudo mv /tmp/${service}.tmp /etc/systemd/${space}/${service}
+			;;
+
+		user)
+			[ ! -d ${HOME}/.config/systemd/user ] && mkdir -p ${HOME}/.config/systemd/user
+			mv /tmp/${service}.tmp ${HOME}/.config/systemd/user/${service}
+			;;
+
+		*)
+			echo "Error! invalid space for service installation: ${space}"
+			;;
+	esac
 done
 
 sudo systemctl daemon-reload
