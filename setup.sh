@@ -2,12 +2,12 @@
 
 # global variables
 STDOUT=/dev/null
-UBUNTU_VERSION=18.04
-
-packages="$PWD/pkg/Ubuntu/$UBUNTU_VERSION/packages"
 
 myinstall_pkgs()
 {	
+	ubuntu_version=`lsb_release -a | grep 'Release' | egrep -o '[[:digit:]]+\.[[:digit:]]+'`
+	packages="$PWD/pkg/Ubuntu/${ubuntu_version}/packages"
+
 	# distro upgrade
 	echo "Atualizando a lista de pacotes ... "
 	sudo apt-get -q update
@@ -53,24 +53,6 @@ myinstall_dropbox()
 	fi
 }
 
-# bashrc
-#if [ ! -s $HOME/.bashrc ]; then
-#	echo "setting .bashrc ..."
-#	cd $HOME
-#	mv $HOME/.bashrc $HOME/.bashrc-`date +"%Y-%m-%d-%H-%M"`
-#	ln -s $DROPBOX_ROOT/Documentos/Linux/bashrc .bashrc
-#fi
-
-# profile
-#if [ ! -s $HOME/.profile ]; then 
-#	echo "setting .pr;ofile ..."
-
-#	cd $HOME
-#	mv $HOME/.profile $HOME/.profile-`date +"%Y-%m-%d-%H-%M"`
-#	ln -s $DROPBOX_ROOT/Documentos/Linux/profile .profile
-#fi
-
-
 myinstall_java()
 {
 	# java runtime environment
@@ -78,46 +60,42 @@ myinstall_java()
 		echo "setting java runtime environment ... "
 		echo 'export PATH=/usr/local/java/bin:$PATH' | sudo tee /etc/profile.d/jre.sh
 	fi
-
-	# java firefox plugin
-	if [ ! -s /usr/lib/mozilla/plugins/libnpjp2.so ]; then
-		echo "setting firefox java plugin ... "
-		cd /usr/lib/mozilla/plugins/
-		sudo ln -s /usr/local/java/lib/amd64/libnpjp2.so
-	fi
 }
 
 myinstall_php()
 {
 	# getting PHP version ...
-	cd $HOME
-
 	version=`php -v | egrep -o '^PHP[[:space:]][[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+'`
 	version=`echo $version | egrep -o '[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+'`
 
-	PHPINI=/etc/php/7.0/apache2/php.ini
+	# PHP configuration files
+	PHPINI=/etc/php/${version}/apache2/php.ini
+	PHPINI_DEVEL=/usr/lib/php/${version}/php.ini-development
 
-	wget https://raw.githubusercontent.com/php/php-src/php-$version/php.ini-development
+	echo "php.ini path: ${PHPINI}"
+	echo "php-development.ini path: ${PHPINI_DEVEL}"
 
-	if [ $? -eq 0 ]; then
-		sudo mv php.ini-development $PHPINI
+	if [ -f "${PHPINI} ] && [ -f "${PHPINI_DEVEL} ]; then
+		echo "Copying PHP development configuration ..."
+		sudo cp ${PHPINI_DEVEL} ${PHPINI}
+
+		echo "Restarting server ..."
+		sudo systemctl restart apache2.service
+	else
+		echo "Error! Configuration files don't exist!"
 	fi
 }
 
 myinstall_env()
 {
 	scripts_folder="$PWD/scripts"
-	packages="$PWD/pkg/Ubuntu/$UBUNTU_VERSION/packages"
-
-
-	if [ ! -d "$scripts_folder" ]; then
-		echo "scripts folder not found - aborting"		
-	fi
+	ubuntu_version=`lsb_release -a | grep 'Release' | egrep -o '[[:digit:]]+\.[[:digit:]]+'`
+	packages="$PWD/pkg/Ubuntu/${ubuntu_version}/packages"
 
 	cp $HOME/.profile $HOME/.profile.`date +"%Y-%m-%d-%H-%M"`.tmp
 
 	# adding script folder to PATH
-	if [ -d "$scripts_folder" ]; then
+	if [ -d "${scripts_folder}" ]; then
 		echo -n "scripts folder found, adding to PATH ..."
 
 		egrep -o -q "${scripts_folder}" ~/.profile
@@ -127,6 +105,8 @@ myinstall_env()
 		else 
 			echo "already added"
 		fi		
+	else 
+		echo "scripts folder not found - aborting"
 	fi
 
 	# adding custom env vars to profile
@@ -136,15 +116,6 @@ myinstall_env()
 		echo "export INSTALLED_PKGS=\"$packages\"" >> ~/.profile
 	else 
 		echo "installed packages environmental var already set"
-	fi		
-}
-
-myinstall_dpkg_hooks(){
-	# restart web server everytime something is added or removed
-	if [ -d /etc/dpkg/dpkg.cfg.d ]; then 
-		echo "post-invoke=if test \"\$DPKG_HOOK_ACTION\" = install || test \$DPKG_HOOK_ACTION = remove ; then service apache2 restart; fi" | sudo tee /etc/dpkg/dpkg.cfg.d/restart-web-server
-
-		echo "post-invoke=if test \"\$DPKG_HOOK_ACTION\" = install || test \$DPKG_HOOK_ACTION = remove ; then chmod a+rw /var/www/html; fi" | sudo tee /etc/dpkg/dpkg.cfg.d/rw-on-server-folder
 	fi		
 }
 
