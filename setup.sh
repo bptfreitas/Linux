@@ -106,7 +106,6 @@ myinstall_php()
 
 myinstall_env()
 {
-	bash_aliases="$PWD/bash_aliases"
 	scripts_folder="$PWD/scripts"
 	packages="$PWD/pkg/Ubuntu/$UBUNTU_VERSION/packages"
 
@@ -116,24 +115,6 @@ myinstall_env()
 	fi
 
 	cp $HOME/.profile $HOME/.profile.`date +"%Y-%m-%d-%H-%M"`.tmp
-
-	# bash_aliases
-	if [ ! -s "$HOME/.bash_aliases" ]; then 
-
-		if [ -f "$bash_aliases" ]; then 
-
-			echo "setting .bash_aliases ..."
-			cd $HOME
-			mv $HOME/.bash_aliases $HOME/.bash_aliases-`date +"%Y-%m-%d-%H-%M"`
-			ln -s "$bash_aliases" .bash_aliases
-
-		else 
-			echo "$bash_aliases file not found"
-		fi
-
-	else
-		echo "symbolic link already created"
-	fi
 
 	# adding script folder to PATH
 	if [ -d "$scripts_folder" ]; then
