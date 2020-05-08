@@ -2,40 +2,69 @@
 
 DEBUG=1
 
+action=reinstall
+
+while [[ $# -gt 0 ]]
+do
+    key="$1"
+
+    case $key in
+		--install)
+			action="install"
+			shift # past argument
+			;;
+
+        --uninstall)
+            action="uninstall"
+            shift # past argument
+            ;; 
+
+		# reinstall
+        --reinstall)
+            CONF_OUTPUT=1
+            shift # past argument
+            ;;
+
+		# unknown option
+        *)    
+            POSITIONAL+=("$1") # save it in an array for later
+            shift # past argument
+            ;;
+    esac
+done
+
 curdir=`pwd`
 rootdir=`dirname ${curdir}`
 services_lst=/tmp/services.lst
 
 echo "Root dir: ${rootdir}"
 
-# sed 's/^#.*\\n$//g' services.conf
+sed -e 's/#.*//' services.conf > /tmp/services.conf.tmp
 
 > ${services_lst}
 
-for service_conf in $(cat services.conf); do
+for service_conf in $(cat /tmp/services.conf.tmp); do
 
 	service=`echo "${service_conf}" | cut -f1 -d:`
 	space=`echo "${service_conf}" | cut -f2 -d:`
 
 	echo "${service}" >> /tmp/services.lst
 
-	echo "Stopping and disabling ${service} ... "
+	echo "Stopping and disabling '${service}' on '${space}' space... "
 
-	sudo systemctl stop ${service}
-	sudo systemctl disable ${service}
+	[ "${space}" == "user" ] && opt_USER=--user || opt_USER=""
+	[ "${space}" == "system" ] && opt_SUDO=sudo || opt_SUDO=""
+
+	${opt_SUDO} systemctl ${opt_USER} stop ${service}
+	${opt_SUDO} systemctl ${opt_USER} disable ${service};
 
 	echo "Installing \"${service}\" on \"${space}\" space ... "
 
 	sed -e "s/SERVICES_FOLDER/${rootdir//\//\\\/}/g" ${service} > /tmp/${service}.tmp
 
 	case ${space} in
-		system)
+		system|user)
 			sudo mv /tmp/${service}.tmp /etc/systemd/${space}/${service}
-			;;
-
-		user)
-			[ ! -d ${HOME}/.config/systemd/user ] && mkdir -p ${HOME}/.config/systemd/user
-			mv /tmp/${service}.tmp ${HOME}/.config/systemd/user/${service}
 			;;
 
 		*)
@@ -44,19 +73,37 @@ for service_conf in $(cat services.conf); do
 	esac
 done
 
-sudo systemctl daemon-reload
+echo "Reloading daemons ..."
 
-for service in $(cat ${services_lst}); do
-	echo "Enabling ${service} ... "
-	sudo systemctl enable ${service}
+sudo systemctl daemon-reload
+systemctl --user daemon-reload
+
+for service_conf in $(cat /tmp/services.conf.tmp); do
+	service=`echo "${service_conf}" | cut -f1 -d:`
+	space=`echo "${service_conf}" | cut -f2 -d:`
+
+	echo "Enabling ${service} ... "]
+
+	[ "${space}" == "user" ] && opt_USER=--user || opt_USER=""
+	[ "${space}" == "system" ] && opt_SUDO=sudo || opt_SUDO=""
+
+	${opt_SUDO} sudo systemctl ${opt_USER} enable ${service};
 done
 
-for service in $(cat ${services_lst}); do
+for service_conf in $(cat /tmp/services.conf.tmp); do
+	service=`echo "${service_conf}" | cut -f1 -d:`
+	space=`echo "${service_conf}" | cut -f2 -d:`
+
 	echo "Starting ${service} ... "
-	sudo systemctl start ${service}
+
+	[ "${space}" == "user" ] && opt_USER=--user || opt_USER=""
+	[ "${space}" == "system" ] && opt_SUDO=sudo || opt_SUDO=""	
+
+	${opt_SUDO} systemctl ${opt_USER} start ${service};
 done
 
 rm ${services_lst}
+rm /tmp/services.conf.tmp
 
 # if [ ! -f "$PWD/git-sync.service" ]; then
 # 	echo "git-sync.service not found - aborting"

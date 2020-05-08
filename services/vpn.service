@@ -1,8 +1,8 @@
 # Contents of /etc/systemd/system/vpn.service
 [Unit]
-Description=Starts VPN service
+Description=VPN service
 After=network.target firewall.service
-Requires=network.target
+# Requires=network.target
 
 [Service]
 Type=oneshot
