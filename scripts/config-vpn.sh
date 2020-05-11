@@ -20,7 +20,7 @@ start)
 		if [ -f ${HOME}/.vpn-locations.session ]; then
 			location=`sed -n "${cur_location}{p;q}" ${HOME}/.vpn-locations.session`
 			[ ${cur_location} -lt ${num_locations} ] &&\
-				cur_location=$(( cur_location + 1 )) 
+				cur_location=$(( cur_location + 1 )) ||\
 				cur_location=1
 			echo "Location: ${location}"
 		else 

@@ -1,23 +1,36 @@
 #!/bin/bash
 
-debug=0
+DEBUG=0
 CONF_OUTPUT=0
-action=""
+WITH_TUN=0
+
+action="$1"
+shift
 
 while [[ $# -gt 0 ]]
 do
     key="$1"
 
     case $key in
-
-        start|stop)
-            action="$key"
+		# configures an output filter as well
+        --with-output)
+            WITH_OUTPUT=1
             shift # past argument
-            ;; 
+            ;;
 
-		# with vpn discards OUTPUT filter
-        --output)
-            CONF_OUTPUT=1
+        --without-output)
+            WITH_OUTPUT=0
+            shift # past argument
+            ;;            
+
+        # allows selected incoming traffic from tunnels
+        --with-tun)
+            WITH_VPN=1
+            shift # past argument
+            ;;
+
+        --without-tun)
+            WITH_VPN=0
             shift # past argument
             ;;
 
@@ -40,22 +53,37 @@ start)
     sudo iptables -P INPUT ACCEPT
     sudo iptables -F INPUT
 
-    # allow outgoing ICMP
-    # sudo iptables -A INPUT -p icmp -j ACCEPT
+    # allow incoming ICMP only through tunnels
+    if [ ${WITH_TUN} -eq 1 ]; then 
+        sudo iptables -A INPUT -i tun+ -p icmp -j ACCEPT
+    fi
+
+    sudo iptables -A INPUT -s 127.0.0.0/8 -j ACCEPT
+    
+    # drop all broadcasts
+    sudo iptables -A INPUT -m addrtype --dst-type BROADCAST -j DROP
+
+    # reject all ICMP
+    sudo iptables -A INPUT -p icmp -j REJECT --reject-with icmp-host-unreachable
 
     # allow incoming DNS
-    sudo iptables -A INPUT -p tcp --dport 53 -j ACCEPT
-    sudo iptables -A INPUT -p udp --dport 53 -j ACCEPT
+    ## sudo iptables -A INPUT -p tcp --dport 53 -j ACCEPT
+    ## sudo iptables -A INPUT -p udp --dport 53 -j ACCEPT
 
-    # allow incoming HTTP
+    # allow incoming requests to web server (HTTP)
     sudo iptables -A INPUT -p tcp --dport 80 -j ACCEPT
     sudo iptables -A INPUT -p udp --dport 80 -j ACCEPT
 
-    # allow incoming HTTPS
-    sudo iptables -A INPUT -p tcp --dport 443 -j ACCEPT
-    sudo iptables -A INPUT -p udp --dport 443 -j ACCEPT
+    # allow incoming traffic only through HTTPS / SSL 
+    ## sudo iptables -A INPUT -p tcp --sport 443 --dport 443 -j ACCEPT
+    ## sudo iptables -A INPUT -p udp --sport 443 --dport 443 -j ACCEPT
 
-    # allow related and established connections
+    # allow incoming traffic through tunnels
+    if [ ${WITH_TUN} -eq 1 ]; then 
+        sudo iptables -A INPUT -i tun+ -j ACCEPT
+    fi    
+
+    # allow incoming TCP connection in 'related' and 'established' states
     sudo iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
 
     # send REJECT answers for all other connections
@@ -65,7 +93,7 @@ start)
     # default policy is DROP to all
     sudo iptables -P INPUT DROP
 
-    if [ $debug -eq 1 ]; then 
+    if [ ${DEBUG} -eq 1 ]; then 
         sudo iptables -t raw -A PREROUTING -p tcp --dport 53 -j TRACE
         sudo iptables -t raw -A PREROUTING -p udp --dport 53 -j TRACE
         sudo iptables -t raw -A INPUT -p tcp --dport 53 -j TRACE
@@ -89,7 +117,7 @@ start)
     sudo iptables -F FORWARD
     sudo iptables -P FORWARD ACCEPT
 
-    sudo iptables -A FORWARD -m state --state ESTABLISHED,RELATED -j ACCEPT 
+    ## sudo iptables -A FORWARD -m state --state ESTABLISHED,RELATED -j ACCEPT 
     sudo iptables -A FORWARD -p tcp -j REJECT --reject-with tcp-reset
     sudo iptables -A FORWARD -p udp -j REJECT --reject-with icmp-host-unreachable
 
@@ -99,7 +127,7 @@ start)
     # OUTPUT configuration #
     ########################
 
-    if [ ${CONF_OUTPUT} -eq 1 ]; then
+    if [ ${WITH_OUTPUT} -eq 1 ]; then
         # temporary ACCEPT policy
         sudo iptables -F OUTPUT
         sudo iptables -P OUTPUT ACCEPT
@@ -125,7 +153,7 @@ start)
         # default policy is DROP
         sudo iptables -P OUTPUT DROP 
 
-        if [ $debug -eq 1 ]; then 
+        if [ ${DEBUG} -eq 1 ]; then 
             sudo iptables -t raw -A PREROUTING -p tcp --dport 53 -j TRACE
             sudo iptables -t raw -A PREROUTING -p udp --dport 53 -j TRACE   
             sudo iptables -t raw -A OUTPUT -p tcp --dport 53 -j TRACE
@@ -150,6 +178,11 @@ stop)
 
     sudo iptables -F FORWARD
     sudo iptables -P FORWARD ACCEPT
+
+    if [ ${WITH_OUTPUT} -eq 1 ]; then 
+        sudo iptables -F OUTPUT
+        sudo iptables -P OUTPUT ACCEPT
+    fi
     ;; # fim: action stop
 
 *)

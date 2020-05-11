@@ -4,7 +4,10 @@ POSITIONAL=()
 
 FORCE_REMOVE=0 # empties directory if it already exists
 COPY_FOLDERS=0 # copy selected folder structures
-COMPRESS=0 # compresses directory with converted pdfs
+ZIP=0 # ZIPes directory with converted pdfs
+ZIP_NAME="" # custom zip prefix to file
+REMOVE_AFTER_ZIP=0 # removes folder after compression
+
 EXT=odp # chooses which libreoffice extention to convert to pdf
 LOG=/dev/null # default log file
 
@@ -39,16 +42,30 @@ do
 		shift # past value
 		;;
 
-		# compress pdf folder after extraction
-		--zip|-z)
-		COMPRESS=1
+		# compress pdf folder after conversion
+		--zip)
+		ZIP=1
 		shift
 		;;
 
-		# copy folder structure
-		--dir|-d)
+		# copy folder structure instead of converting
+		--dir)
 		COPY_FOLDERS=1
 		FOLDER=$2
+		shift # past argument
+		shift # past value
+		;;
+
+		# remove folder after comversion (used with zip)
+		--no-folder)
+		REMOVE_AFTER_ZIP=1
+		shift #past argument
+		shift #past value
+		;;
+
+		# custom zip name
+		--zip-name)
+		ZIP_NAME="$2"
 		shift # past argument
 		shift # past value
 		;;
@@ -150,14 +167,23 @@ find ${SRCDIR} -name *.${EXT} | \
 	--convert-to pdf \
 	--outdir "${pdfdir}" {} 2> ${LOG}
 
-# compressing files to zip, if needed
-if [ ${COMPRESS} -eq 1 ]; then 
+# ZIPing files to zip, if needed
+if [ ${ZIP} -eq 1 ]; then 
 	echo "Compressing ${pdfdir} folder ..."
 	zip -r "${pdfdir}.zip" "${pdfdir}/" 2>&1 > ${LOG}
 	mv "${pdfdir}.zip" "${DESTDIR}/."
+
+	if [ ${REMOVE_AFTER_ZIP} -eq 1]; then
+
+	else
+
+	fi
+else 
+
 fi
 
 # moving to DESTDIR
+echo "Moving \"${pdfdir}\" to \"${DESTDIR}/."
 mv "${pdfdir}" "${DESTDIR}/."
 
 # copy selected folder structure to output dir
