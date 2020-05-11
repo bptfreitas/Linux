@@ -21,7 +21,6 @@ myinstall_pkgs()
 		return 1
 	fi
 	
-
 	if [ -f "$packages" ]; then 
 		ok_pkgs=`mktemp`
 		error_pkgs=missingpackages-`date +"%Y-%m-%d_%H-%M"`.txt
@@ -62,6 +61,38 @@ myinstall_java()
 	fi
 }
 
+myinstall_webserver()
+{
+	if [ -f /etc/apache2/apache2.conf ]; then 
+
+		echo "Stopping web-server ..."
+		sudo systemctl stop apache2.service	
+
+		echo "Backing up current configuration ... "
+		cp /etc/apache2/apache2.conf ${HOME}/.apache2-`date '+%Y-%m-%d_%H-%M-%S'`.conf
+
+		echo "<Directory \"/srv/pub\">
+			Options Indexes FollowSymLinks
+			AllowOverride None
+			Require all granted
+			</Directory>" \
+			| sudo tee /etc/apache2/sites-enabled/100-srv-pub.conf	
+
+		echo "Alias \"/arquivos\" \"/srv/pub/arquivos\"" \
+			| sudo tee /etc/apache2/sites-enabled/101-arquivos.conf
+
+		echo "Alias \"/disciplinas\" \"/srv/pub/disciplinas\""\
+			| sudo tee /etc/apache2/sites-enabled/102-disciplinas.conf
+
+		## Require all granted 
+
+		echo "Starting web-server ..."
+		sudo systemctl start apache2.service
+	else 
+		echo "Web server not installed!"
+	fi
+}
+
 myinstall_php()
 {
 	# getting PHP version ...
@@ -84,6 +115,15 @@ myinstall_php()
 	else
 		echo "Error! Configuration files don't exist!"
 	fi
+}
+
+myinstall_aliases()
+{ 
+	[ ! -f ${HOME}/.bash_aliases ] && > ${HOME}/.bash_aliases
+	
+	echo "alias fw-monitor='while :; do clear; sudo iptables -vnL; sleep 3; done'" >> \
+		${HOME}/.bash_aliases
+
 }
 
 myinstall_env()
@@ -109,13 +149,31 @@ myinstall_env()
 		echo "scripts folder not found - aborting"
 	fi
 
-	# adding custom env vars to profile
-	grep -q 'INSTALLED_PKGS' $HOME/.profile
-	if [ $? -ne 0 ]; then
-		echo "adding global packages variable ..."
-		echo "export INSTALLED_PKGS=\"$packages\"" >> ~/.profile
-	else 
-		echo "installed packages environmental var already set"
-	fi		
+	# adding INSTALLED_PKGS env var to profile
+	if [ ! -f "${packages}" ]; then
+		grep -q 'INSTALLED_PKGS' $HOME/.profile
+		if [ $? -ne 0 ]; then
+			echo "adding global packages variable ..."
+			echo "export INSTALLED_PKGS=\"$packages\"" >> ~/.profile
+		else 
+			echo "installed packages environment variable already set"
+		fi
+	else
+		echo "Packages file ${packages} not found - aborting"
+	fi
+}
+
+myinstall(){
+	echo "Starting environment setup ..."
+
+	myinstall_pkgs
+
+	myinstall_php
+
+	myinstall_java
+
+	myinstall_env
+
+	myinstall_aliases
 }
 
