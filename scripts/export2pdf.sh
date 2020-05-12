@@ -2,11 +2,16 @@
 
 POSITIONAL=()
 
+FILE_PREFIX="" # custom search file prefix 
+EXPORT_FOLDER="" # custom folder name for export
 FORCE_REMOVE=0 # empties directory if it already exists
-COPY_FOLDERS=0 # copy selected folder structures
-ZIP=0 # ZIPes directory with converted pdfs
+UPDATE_ONLY=0 # exports only newer files
+
+ZIP=0 # zips directory with converted pdfs
 ZIP_NAME="" # custom zip prefix to file
 REMOVE_AFTER_ZIP=0 # removes folder after compression
+
+COPY_FOLDERS=0 # copy selected folder structures
 
 EXT=odp # chooses which libreoffice extention to convert to pdf
 LOG=/dev/null # default log file
@@ -30,11 +35,6 @@ do
         shift # past value
         ;;
 
-		--force|-f)
-		FORCE_REMOVE=1
-		shift
-		;;
-
 		# select what extension to convert
 		--ext|-e)
 		EXT=$2
@@ -42,10 +42,42 @@ do
 		shift # past value
 		;;
 
+		# force outdir removal if it exists
+		--force|-f)
+		FORCE_REMOVE=1
+		shift
+		;;
+
+		--update-only|-u)
+		UPDATE_ONLY=1
+		shift
+		;;		
+
+		# file prefix to scan
+		--file-prefix)
+		FILE_PREFIX="$2"
+		shift # past argument
+		shift # past value
+		;;
+
+		# custom folder name
+		--export-folder)
+		EXPORT_FOLDER="$2"
+		shift # past argument
+		shift # past value
+		;;		
+
 		# compress pdf folder after conversion
 		--zip)
 		ZIP=1
 		shift
+		;;
+
+		# custom zip name
+		--zip-name)
+		ZIP_NAME="$2"
+		shift # past argument
+		shift # past value
 		;;
 
 		# copy folder structure instead of converting
@@ -61,13 +93,6 @@ do
 		REMOVE_AFTER_ZIP=1
 		shift #past argument
 		shift #past value
-		;;
-
-		# custom zip name
-		--zip-name)
-		ZIP_NAME="$2"
-		shift # past argument
-		shift # past value
 		;;
 
 		# unknown option
@@ -123,8 +148,7 @@ else
 					exit 1
 				fi  
 			else
-				echo "- aborting"
-				exit 1
+				echo "- overwriting contents ... "
 			fi
 		else
 			echo "Directory ${DESTDIR} already exists and is empty"
@@ -152,39 +176,64 @@ esac
 
 echo -e "Extension to export: ${EXT}\nProgram: ${program}"
 
+# checking if file prefix is set
+[ "" != "${FILE_PREFIX}" ] &&\
+	echo "File prefix to convert: ${FILE_PREFIX}"
+
+# checking if export only newer files is set
+if [ ${UPDATE_ONLY} -eq 1 ]; then
+	find_update_cmd="-mtime 1"
+	zip_update_cmd="u"
+else
+	find_update_cmd=""
+	zip_update_cmd=""
+fi
+
 ###################
 # Starting script #
 ###################
 
-pdfdir="`basename $SRCDIR`-PDF"
+if [ "${EXPORT_FOLDER}" == "" ]; then 
+	pdfdir="`basename $SRCDIR`-PDF"
+else
+	pdfdir="${EXPORT_FOLDER}"
+fi
 
-echo "Exporting to ${pdfdir}"
+tmpdir="`mktemp -d`"
+
+echo "Exporting to ${tmpdir} ..."
 
 # converting to pdf 
-find ${SRCDIR} -name *.${EXT} | \
+find ${SRCDIR} ${find_update_cmd} -name ${FILE_PREFIX}*.${EXT} | \
 	xargs -I{} libreoffice \
 	--${program} \
 	--convert-to pdf \
-	--outdir "${pdfdir}" {} 2> ${LOG}
+	--outdir "${tmpdir}" {} 2> ${LOG}
 
-# ZIPing files to zip, if needed
+# compressing files to zip, if needed
 if [ ${ZIP} -eq 1 ]; then 
-	echo "Compressing ${pdfdir} folder ..."
-	zip -r "${pdfdir}.zip" "${pdfdir}/" 2>&1 > ${LOG}
-	mv "${pdfdir}.zip" "${DESTDIR}/."
 
-	if [ ${REMOVE_AFTER_ZIP} -eq 1]; then
-
+	if [ "${ZIP_NAME}" == "" ]; then 
+		zip_name="${pdfdir}.zip"
 	else
-
+		zip_name="${ZIP_NAME}.zip"
 	fi
-else 
 
+	echo "Compressing '${tmpdir}' folder to '${zip_name}' ..."
+
+	zip -r${zip_update_cmd} "${zip_name}" "${tmpdir}/" 2>&1 > ${LOG}
+	mv "${zip_name}" "${DESTDIR}/."
+
+	# if [ ${REMOVE_AFTER_ZIP} -eq 1]; then
+
+	# else
+
+	# fi
 fi
 
-# moving to DESTDIR
-echo "Moving \"${pdfdir}\" to \"${DESTDIR}/."
-mv "${pdfdir}" "${DESTDIR}/."
+# moving files to DESTDIR
+echo "Moving \"${tmpdir}\" to \"${DESTDIR}/${pdfdir}"
+mv "${tmpdir}" "${DESTDIR}/${pdfdir}"
 
 # copy selected folder structure to output dir
 if [ ${COPY_FOLDERS} -eq 1 ]; then
@@ -198,5 +247,4 @@ if [ ${COPY_FOLDERS} -eq 1 ]; then
 		fi
 
 	done
-
 fi
