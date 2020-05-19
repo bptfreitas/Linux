@@ -6,6 +6,7 @@ FILE_PREFIX="" # custom search file prefix
 EXPORT_FOLDER="" # custom folder name for export
 FORCE_REMOVE=0 # empties directory if it already exists
 UPDATE_ONLY=0 # exports only newer files
+SORT=0
 
 ZIP=0 # zips directory with converted pdfs
 ZIP_NAME="" # custom zip prefix to file
@@ -79,6 +80,12 @@ do
 		shift # past argument
 		shift # past value
 		;;
+
+		# sort files
+		--sort)
+		SORT=1
+		shift # past value
+		;;		
 
 		# copy folder structure instead of converting
 		--dir)
@@ -193,6 +200,8 @@ fi
 # Starting script #
 ###################
 
+echo
+
 if [ "${EXPORT_FOLDER}" == "" ]; then 
 	pdfdir="`basename $SRCDIR`-PDF"
 else
@@ -200,10 +209,39 @@ else
 fi
 
 tmpdir="`mktemp -d`"
+tmpfile="`mktemp`"
 
 echo "Exporting to ${tmpdir} ..."
 
-# converting to pdf 
+if [ ${SORT} -eq 1 ]; then
+	tmpdir_sort="`mktemp -d`"
+	all_files_list="`mktemp`"
+
+	find ${SRCDIR} -name ${FILE_PREFIX}*.${EXT} \
+		| sort > ${all_files_list}
+
+	i=1
+	for file_fullpath in `cat ${all_files_list}`; do
+
+		filename=`basename ${file_fullpath}`
+
+		index=`printf "%02d" ${i}`
+		i=$(( i + 1 ))
+
+		new_filename=`echo "${filename}" | sed -e "s/${FILE_PREFIX}/${FILE_PREFIX}-${index}/g"`		
+
+		echo -e "Renaming '${filename}' to '${new_filename}'"
+
+		cp --preserve ${file_fullpath} ${tmpdir_sort}/${new_filename}
+
+		# new_filename=`echo "${filename}" | sed "s/${FILE_PREFIX}/${FILE_PREFIX}-${index}/g"`
+
+		# echo -e "Novo nome: ${new_filename}\n"
+	done
+
+	SRCDIR="${tmpdir_sort}"
+fi
+
 find ${SRCDIR} ${find_update_cmd} -name ${FILE_PREFIX}*.${EXT} | \
 	xargs -I{} libreoffice \
 	--${program} \
