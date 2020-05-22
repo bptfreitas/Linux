@@ -70,18 +70,23 @@ start)
     ## sudo iptables -A INPUT -p tcp --dport 53 -j ACCEPT
     ## sudo iptables -A INPUT -p udp --dport 53 -j ACCEPT
 
-    # allow incoming requests to web server (HTTP)
-    sudo iptables -A INPUT -p tcp --dport 80 -j ACCEPT
-    sudo iptables -A INPUT -p udp --dport 80 -j ACCEPT
-
     # allow incoming traffic only through HTTPS / SSL 
     ## sudo iptables -A INPUT -p tcp --sport 443 --dport 443 -j ACCEPT
     ## sudo iptables -A INPUT -p udp --sport 443 --dport 443 -j ACCEPT
+    
+    # from HTTP 
+    #sudo iptables -A INPUT -i tun+ -p tcp --sport 80 -j ACCEPT
+    # from SSL
+    #sudo iptables -A INPUT -i tun+ -p tcp --sport 443 -j ACCEPT
+    # from proxmox
+    #sudo iptables -A INPUT -i tun+ -p udp --sport 8006 -j ACCEPT
 
-    # allow incoming traffic through tunnels
-    if [ ${WITH_TUN} -eq 1 ]; then 
-        sudo iptables -A INPUT -i tun+ -j ACCEPT
-    fi    
+    # allow HTTP requests
+    sudo iptables -A INPUT -p tcp --sport 80 -j ACCEPT
+    # allow from SSL requests
+    sudo iptables -A INPUT -p tcp --sport 443 -j ACCEPT
+    # allow proxmox connections
+    sudo iptables -A INPUT -p udp --sport 8006 -j ACCEPT    
 
     # allow incoming TCP connection in 'related' and 'established' states
     sudo iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
