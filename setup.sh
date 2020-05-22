@@ -119,7 +119,7 @@ myinstall_php()
 
 myinstall_aliases()
 { 
-	[ ! -f ${HOME}/.bash_aliases ] && > ${HOME}/.bash_aliases
+	[ ! -f ${HOME}/.bash_aliases ] &&> ${HOME}/.bash_aliases
 	
 	echo "alias fw-monitor='while :; do clear; sudo iptables -vnL; sleep 3; done'" >> \
 		${HOME}/.bash_aliases
@@ -150,7 +150,7 @@ myinstall_env()
 	fi
 
 	# adding INSTALLED_PKGS env var to profile
-	if [ ! -f "${packages}" ]; then
+	if [ -f "${packages}" ]; then
 		grep -q 'INSTALLED_PKGS' $HOME/.profile
 		if [ $? -ne 0 ]; then
 			echo "adding global packages variable ..."
