@@ -123,56 +123,61 @@ fi
 
 echo "SRCDIR: ${SRCDIR}"
 
+# checking EXPORT_DIR
+if [ "${EXPORT_FOLDER}" == "" ]; then 
+	outdir="${DESTDIR}"
+else
+	outdir="${DESTDIR}/${EXPORT_FOLDER}"
+fi
+
 # checking DESTDIR
-if [ "${DESTDIR}" == "" ]; then 
-	echo "${DESTDIR} not set - aborting"
+if [ "${outdir}" == "" ]; then 
+	echo "${outdir} not set - aborting"
 	exit -1
 else
-	if [ ! -d "${DESTDIR}" ]; then
+	if [ ! -d "${outdir}" ]; then
 
 		# directory does not exist - creating it
-		echo "Creating $DESTDIR ..."
-		mkdir -p "$DESTDIR" 2>&1 > ${LOG}
+		echo "Creating ${outdir} ..."
+		mkdir -p "${outdir}" 2>&1 > ${LOG}
 		if [ $? -ne 0 ]; then
-			echo "Error creating \"$DESTDIR\" - aborting"
+			echo "Error creating \"${outdir}\" - aborting"
 			exit
 		fi
 	else
 
 		# directory exists
-		if [ `ls "${DESTDIR}" | wc -l` -ne 0 ]; then
+		if [ `ls "${outdir}" | wc -l` -ne 0 ]; then
 
 			# directory exists and is not empty, check if it is marked to be removed
-			echo -n "Directory ${DESTDIR} not empty"
+			echo -n "Directory ${outdir} not empty"
 
 			if [ $FORCE_REMOVE -eq 1 ]; then
 				echo "- erasing old contents"
-				rm -rf "${DESTDIR}" 2>&1 > ${LOG}
+				rm -rf "${outdir}" 2>&1 > ${LOG}
 
-				if [ $? -eq 0 ]; then 
-					mkdir -p ${DESTDIR}
-				else
+				if [ ! $? -eq 0 ]; then 
 					exit 1
 				fi  
 			else
 				echo "- overwriting contents ... "
 			fi
 		else
-			echo "Directory ${DESTDIR} already exists and is empty"
+			echo "Directory ${outdir} already exists and is empty"
 		fi
 	fi
 fi
 
-echo "DESTDIR: ${DESTDIR}"
+echo "outdir: ${outdir}"
 
 # checking EXT
 case ${EXT} in
 	odp)
-		program=impress
+		program="impress"
 		;;
 
 	odt)
-		program=writer
+		program="writer"
 		;;
 
 	*)
@@ -201,12 +206,6 @@ fi
 ###################
 
 echo
-
-if [ "${EXPORT_FOLDER}" == "" ]; then 
-	pdfdir="`basename $SRCDIR`-PDF"
-else
-	pdfdir="${EXPORT_FOLDER}"
-fi
 
 tmpdir="`mktemp -d`"
 tmpfile="`mktemp`"
@@ -260,7 +259,7 @@ if [ ${ZIP} -eq 1 ]; then
 	echo "Compressing '${tmpdir}' folder to '${zip_name}' ..."
 
 	zip -r${zip_update_cmd} "${zip_name}" "${tmpdir}/" 2>&1 > ${LOG}
-	mv "${zip_name}" "${DESTDIR}/."
+	mv "${zip_name}" "${outdir}/."
 
 	# if [ ${REMOVE_AFTER_ZIP} -eq 1]; then
 
@@ -270,8 +269,10 @@ if [ ${ZIP} -eq 1 ]; then
 fi
 
 # moving files to DESTDIR
-echo "Moving \"${tmpdir}\" to \"${DESTDIR}/${pdfdir}"
-mv "${tmpdir}" "${DESTDIR}/${pdfdir}"
+echo "Moving \"${tmpdir}\" to \"${outdir}\""
+
+cp -r "${tmpdir}/" "${outdir}/"
+rm -rf "${tmpdir}"
 
 # copy selected folder structure to output dir
 if [ ${COPY_FOLDERS} -eq 1 ]; then
