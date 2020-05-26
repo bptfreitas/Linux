@@ -34,6 +34,11 @@ do
             shift # past argument
             ;;
 
+        # applications with 
+        proxmox)
+            shift
+            ;;
+
 		# unknown option
         *)    
             POSITIONAL+=("$1") # save it in an array for later
@@ -84,9 +89,7 @@ start)
     # allow HTTP requests
     sudo iptables -A INPUT -p tcp --sport 80 -j ACCEPT
     # allow from SSL requests
-    sudo iptables -A INPUT -p tcp --sport 443 -j ACCEPT
-    # allow proxmox connections
-    sudo iptables -A INPUT -p udp --sport 8006 -j ACCEPT    
+    sudo iptables -A INPUT -p tcp --sport 443 -j ACCEPT    
 
     # allow incoming TCP connection in 'related' and 'established' states
     sudo iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
@@ -176,6 +179,31 @@ start)
         fi    
     fi
     ;; # fim: action start
+
+proxmox)
+    operation=${POSITIONAL[0]}
+
+    case $operation in
+
+    open)
+        sudo iptables -I INPUT 3 -p udp --sport 8006 -j ACCEPT
+        sudo iptables -I INPUT 4 -p tcp --sport 8006 -j ACCEPT
+        ;;
+
+    close)
+        while :; do
+            rule=`sudo iptables -S INPUT | grep -no -m 1 8006 | cut -f1 -d':'`
+            rule=$(( rule -1 ))        
+            [ ${rule} -gt 0 ] && sudo iptables -D INPUT ${rule} || break
+        done
+        ;;
+
+    *)
+        echo "Error: invalid operation for proxmox ($operation)"
+        ;;
+    esac
+
+    ;;
 
 stop)
     sudo iptables -F INPUT
