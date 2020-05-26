@@ -186,8 +186,8 @@ proxmox)
     case $operation in
 
     open)
-        sudo iptables -I INPUT 3 -p udp --sport 8006 -j ACCEPT
-        sudo iptables -I INPUT 4 -p tcp --sport 8006 -j ACCEPT
+        sudo iptables -I INPUT 4 -p udp --sport 8006 -j ACCEPT
+        sudo iptables -I INPUT 5 -p tcp --sport 8006 -j ACCEPT
         ;;
 
     close)
