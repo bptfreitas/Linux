@@ -71,6 +71,13 @@ start)
     # reject all ICMP
     sudo iptables -A INPUT -p icmp -j REJECT --reject-with icmp-host-unreachable
 
+    # allow MS Teams to go through the firewall
+    sudo iptables -A INPUT -p udp --sport 3478:3481 -j ACCEPT 
+
+    sudo iptables -A INPUT -s 13.107.64.0/18 -j ACCEPT
+    sudo iptables -A INPUT -s 52.112.0.0/14 -j ACCEPT
+    sudo iptables -A INPUT -s 52.120.0.0/14 -j ACCEPT
+
     # allow incoming DNS
     ## sudo iptables -A INPUT -p tcp --dport 53 -j ACCEPT
     ## sudo iptables -A INPUT -p udp --dport 53 -j ACCEPT
@@ -88,7 +95,7 @@ start)
 
     # allow HTTP requests
     sudo iptables -A INPUT -p tcp --sport 80 -j ACCEPT
-    # allow from SSL requests
+    # allow SSL requests
     sudo iptables -A INPUT -p tcp --sport 443 -j ACCEPT    
 
     # allow incoming TCP connection in 'related' and 'established' states
@@ -100,23 +107,6 @@ start)
 
     # default policy is DROP to all
     sudo iptables -P INPUT DROP
-
-    if [ ${DEBUG} -eq 1 ]; then 
-        sudo iptables -t raw -A PREROUTING -p tcp --dport 53 -j TRACE
-        sudo iptables -t raw -A PREROUTING -p udp --dport 53 -j TRACE
-        sudo iptables -t raw -A INPUT -p tcp --dport 53 -j TRACE
-        sudo iptables -t raw -A INPUT -p udp --dport 53 -j TRACE    
-
-        sudo iptables -t raw -A PREROUTING -p tcp --dport 80 -j TRACE
-        sudo iptables -t raw -A PREROUTING -p udp --dport 80 -j TRACE
-        sudo iptables -t raw -A INPUT -p tcp --dport 80 -j TRACE
-        sudo iptables -t raw -A INPUT -p udp --dport 80 -j TRACE    
-
-        sudo iptables -t raw -A PREROUTING -p tcp --dport 443 -j TRACE
-        sudo iptables -t raw -A PREROUTING -p udp --dport 443 -j TRACE
-        sudo iptables -t raw -A INPUT -p tcp --dport 443 -j TRACE
-        sudo iptables -t raw -A INPUT -p udp --dport 443 -j TRACE
-    fi
 
     #########################
     # FORWARD configuration #
@@ -134,6 +124,12 @@ start)
     ########################
     # OUTPUT configuration #
     ########################
+
+    # allow MS Teams to go through the firewall
+    sudo iptables -I OUTPUT 1 -p udp --dport 3478:3481 -j ACCEPT
+    sudo iptables -I OUTPUT 2 -d 13.107.64.0/18 -j ACCEPT
+    sudo iptables -I OUTPUT 3 -d 52.112.0.0/14 -j ACCEPT
+    sudo iptables -I OUTPUT 4 -d 52.120.0.0/14 -j ACCEPT
 
     if [ ${WITH_OUTPUT} -eq 1 ]; then
         # temporary ACCEPT policy
@@ -161,49 +157,71 @@ start)
         # default policy is DROP
         sudo iptables -P OUTPUT DROP 
 
-        if [ ${DEBUG} -eq 1 ]; then 
-            sudo iptables -t raw -A PREROUTING -p tcp --dport 53 -j TRACE
-            sudo iptables -t raw -A PREROUTING -p udp --dport 53 -j TRACE   
-            sudo iptables -t raw -A OUTPUT -p tcp --dport 53 -j TRACE
-            sudo iptables -t raw -A OUTPUT -p udp --dport 53 -j TRACE
-
-            sudo iptables -t raw -A PREROUTING -p tcp --dport 80 -j TRACE
-            sudo iptables -t raw -A PREROUTING -p udp --dport 80 -j TRACE
-            sudo iptables -t raw -A OUTPUT -p tcp --dport 80 -j TRACE
-            sudo iptables -t raw -A OUTPUT -p udp --dport 80 -j TRACE
-
-            sudo iptables -t raw -A PREROUTING -p tcp --dport 443 -j TRACE
-            sudo iptables -t raw -A PREROUTING -p udp --dport 443 -j TRACE
-            sudo iptables -t raw -A OUTPUT -p tcp --dport 443 -j TRACE
-            sudo iptables -t raw -A OUTPUT -p udp --dport 443 -j TRACE
-        fi    
     fi
     ;; # fim: action start
 
-proxmox)
-    operation=${POSITIONAL[0]}
+open)
+    program=${POSITIONAL[0]}
 
-    case $operation in
+    case $program in
+        # proxmox virtualization tool
+        proxmox)
+            sudo iptables -I INPUT 4 -p udp --sport 8006 -j ACCEPT
+            sudo iptables -I INPUT 5 -p tcp --sport 8006 -j ACCEPT
 
-    open)
-        sudo iptables -I INPUT 4 -p udp --sport 8006 -j ACCEPT
-        sudo iptables -I INPUT 5 -p tcp --sport 8006 -j ACCEPT
-        ;;
+            sudo iptables -I OUTPUT 1 -p udp --dport 8006 -j ACCEPT
+            sudo iptables -I OUTPUT 2 -p tcp --dport 8006 -j ACCEPT        
+            ;; # end: open proxmox
 
-    close)
-        while :; do
-            rule=`sudo iptables -S INPUT | grep -no -m 1 8006 | cut -f1 -d':'`
-            rule=$(( rule -1 ))        
-            [ ${rule} -gt 0 ] && sudo iptables -D INPUT ${rule} || break
-        done
-        ;;
+        # Microsoft Teams
+        msteams)
+            sudo iptables -I INPUT 4 -p udp --sport 3478:3481 -j ACCEPT
+            sudo iptables -I OUTPUT 1 -p udp --dport 3478:3481 -j ACCEPT
+            ;; # end: open msteams
 
-    *)
-        echo "Error: invalid operation for proxmox ($operation)"
-        ;;
+        *)
+            echo "Error: invalid program to allow through firewall ($program)"
+            exit -1
+            ;;
     esac
+    ;; # end: open 
 
-    ;;
+close)
+    program=${POSITIONAL[0]}
+
+    case $program in
+        # proxmox virtualization tool
+        proxmox)
+            for chain in INPUT OUTPUT; do
+                while :; do
+                    rule=`sudo iptables -S ${chain} |\
+                        grep -no -m 1 '8006' |\
+                        cut -f1 -d':'`
+                    rule=$(( rule -1 ))        
+                    [ ${rule} -gt 0 ] && sudo iptables -D ${chain} ${rule} || break
+                done
+            done
+            ;; # end: close proxmox
+
+        # Microsoft Teams
+        msteams)
+            for chain in INPUT OUTPUT; do
+                while :; do
+                    rule=`sudo iptables -S ${chain} |\
+                        grep -no -m 1 '3478:3481|13.107.64.0|52.112.0.0|52.120.0.0' |\
+                        cut -f1 -d':'`
+                    rule=$(( rule -1 ))        
+                    [ ${rule} -gt 0 ] && sudo iptables -D ${chain} ${rule} || break
+                done
+            done
+            ;; # end: close msteams
+
+        *)
+            echo "Error: invalid operation for proxmox ($operation)"
+            exit -1
+            ;; 
+    esac 
+    ;; # end: close  
 
 stop)
     sudo iptables -F INPUT
@@ -212,11 +230,62 @@ stop)
     sudo iptables -F FORWARD
     sudo iptables -P FORWARD ACCEPT
 
+    for chain in INPUT OUTPUT; do
+        while :; do
+            rule=`sudo iptables -S ${chain} |\
+                grep -no -m 1 '3478:3481|13.107.64.0|52.112.0.0|52.120.0.0' |\
+                cut -f1 -d':'`
+            rule=$(( rule -1 ))        
+            [ ${rule} -gt 0 ] && sudo iptables -D ${chain} ${rule} || break
+        done
+    done
+
     if [ ${WITH_OUTPUT} -eq 1 ]; then 
         sudo iptables -F OUTPUT
         sudo iptables -P OUTPUT ACCEPT
     fi
     ;; # fim: action stop
+
+debug)
+
+    if [ ${DEBUG} -eq 1 ]; then 
+        sudo iptables -t raw -A PREROUTING -p tcp --dport 53 -j TRACE
+        sudo iptables -t raw -A PREROUTING -p udp --dport 53 -j TRACE
+        sudo iptables -t raw -A INPUT -p tcp --dport 53 -j TRACE
+        sudo iptables -t raw -A INPUT -p udp --dport 53 -j TRACE    
+
+        sudo iptables -t raw -A PREROUTING -p tcp --dport 80 -j TRACE
+        sudo iptables -t raw -A PREROUTING -p udp --dport 80 -j TRACE
+        sudo iptables -t raw -A INPUT -p tcp --dport 80 -j TRACE
+        sudo iptables -t raw -A INPUT -p udp --dport 80 -j TRACE    
+
+        sudo iptables -t raw -A PREROUTING -p tcp --dport 443 -j TRACE
+        sudo iptables -t raw -A PREROUTING -p udp --dport 443 -j TRACE
+        sudo iptables -t raw -A INPUT -p tcp --dport 443 -j TRACE
+        sudo iptables -t raw -A INPUT -p udp --dport 443 -j TRACE
+    fi
+
+
+    if [ ${DEBUG} -eq 1 ]; then 
+        sudo iptables -t raw -A PREROUTING -p tcp --dport 53 -j TRACE
+        sudo iptables -t raw -A PREROUTING -p udp --dport 53 -j TRACE   
+        sudo iptables -t raw -A OUTPUT -p tcp --dport 53 -j TRACE
+        sudo iptables -t raw -A OUTPUT -p udp --dport 53 -j TRACE
+
+        sudo iptables -t raw -A PREROUTING -p tcp --dport 80 -j TRACE
+        sudo iptables -t raw -A PREROUTING -p udp --dport 80 -j TRACE
+        sudo iptables -t raw -A OUTPUT -p tcp --dport 80 -j TRACE
+        sudo iptables -t raw -A OUTPUT -p udp --dport 80 -j TRACE
+
+        sudo iptables -t raw -A PREROUTING -p tcp --dport 443 -j TRACE
+        sudo iptables -t raw -A PREROUTING -p udp --dport 443 -j TRACE
+        sudo iptables -t raw -A OUTPUT -p tcp --dport 443 -j TRACE
+        sudo iptables -t raw -A OUTPUT -p udp --dport 443 -j TRACE
+    fi        
+
+
+
+    ;;
 
 *)
     echo "Invalid action: ${action}"
