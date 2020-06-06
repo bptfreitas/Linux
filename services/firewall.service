@@ -9,7 +9,8 @@ Type=oneshot
 # Restart=always
 RemainAfterExit=yes
 ExecStart=SERVICES_FOLDER/scripts/config-fw.sh start --with-vpn
-ExecStop=SERVICES_FOLDER/scripts/config-fw.sh stop --with-vpn
+ExecStartPost=SERVICES_FOLDER/scripts/config-fw.sh open msteams
+ExecStop=SERVICES_FOLDER/scripts/config-fw.sh stop
 
 [Install]
 WantedBy=multi-user.target
