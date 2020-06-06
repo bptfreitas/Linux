@@ -2,7 +2,25 @@
 
 DEBUG=1
 
-action=reinstall
+if [ $DEBUG -eq 1 ]; then 
+	action=reinstall
+else
+	action="$1"
+
+	case $action in
+		install|uninstall)
+			;;
+
+		reinstall)
+			;;
+		
+		*)
+			echo "Invalid action: \"$action\" "
+			exit -1
+			;;
+	esac;
+fi
+
 
 while [[ $# -gt 0 ]]
 do
