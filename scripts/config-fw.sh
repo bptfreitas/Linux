@@ -35,8 +35,7 @@ do
             ;;
 
         # applications with 
-        proxmox)
-            shift
+        open|close)
             ;;
 
 		# unknown option
@@ -72,11 +71,6 @@ start)
     sudo iptables -A INPUT -p icmp -j REJECT --reject-with icmp-host-unreachable
 
     # allow MS Teams to go through the firewall
-    sudo iptables -A INPUT -p udp --sport 3478:3481 -j ACCEPT 
-
-    sudo iptables -A INPUT -s 13.107.64.0/18 -j ACCEPT
-    sudo iptables -A INPUT -s 52.112.0.0/14 -j ACCEPT
-    sudo iptables -A INPUT -s 52.120.0.0/14 -j ACCEPT
 
     # allow incoming DNS
     ## sudo iptables -A INPUT -p tcp --dport 53 -j ACCEPT
@@ -125,12 +119,6 @@ start)
     # OUTPUT configuration #
     ########################
 
-    # allow MS Teams to go through the firewall
-    sudo iptables -I OUTPUT 1 -p udp --dport 3478:3481 -j ACCEPT
-    sudo iptables -I OUTPUT 2 -d 13.107.64.0/18 -j ACCEPT
-    sudo iptables -I OUTPUT 3 -d 52.112.0.0/14 -j ACCEPT
-    sudo iptables -I OUTPUT 4 -d 52.120.0.0/14 -j ACCEPT
-
     if [ ${WITH_OUTPUT} -eq 1 ]; then
         # temporary ACCEPT policy
         sudo iptables -F OUTPUT
@@ -166,7 +154,6 @@ open)
     case $program in
         # proxmox virtualization tool
         proxmox)
-            sudo iptables -I INPUT 4 -p udp --sport 8006 -j ACCEPT
             sudo iptables -I INPUT 5 -p tcp --sport 8006 -j ACCEPT
 
             sudo iptables -I OUTPUT 1 -p udp --dport 8006 -j ACCEPT
@@ -176,7 +163,14 @@ open)
         # Microsoft Teams
         msteams)
             sudo iptables -I INPUT 4 -p udp --sport 3478:3481 -j ACCEPT
+            sudo iptables -I INPUT 5 -s 13.107.64.0/18 -j ACCEPT
+            sudo iptables -I INPUT 6 -s 52.112.0.0/14 -j ACCEPT
+            sudo iptables -I INPUT 7 -s 52.120.0.0/14 -j ACCEPT
+
             sudo iptables -I OUTPUT 1 -p udp --dport 3478:3481 -j ACCEPT
+            sudo iptables -I OUTPUT 2 -d 13.107.64.0/18 -j ACCEPT
+            sudo iptables -I OUTPUT 3 -d 52.112.0.0/14 -j ACCEPT
+            sudo iptables -I OUTPUT 4 -d 52.120.0.0/14 -j ACCEPT            
             ;; # end: open msteams
 
         *)
