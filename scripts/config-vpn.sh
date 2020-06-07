@@ -3,9 +3,10 @@
 LOG=/dev/stdout 
 
 if [ -f ${HOME}/.vpn-locations ]; then
-	num_locations=`wc -l ${HOME}/.vpn-locations | awk '{ print $1 }'`
 	shuf ${HOME}/.vpn-locations > ~/.vpn-locations.session
-	cur_location=1
+	
+	cur_loc=1
+	N_loc=`wc -l ${HOME}/.vpn-locations | awk '{ print $1 }'`
 else 
 	rm -f ~/.vpn-locations.session
 fi
@@ -18,10 +19,9 @@ start)
 	timeout=1
 	while :; do
 		if [ -f ${HOME}/.vpn-locations.session ]; then
-			location=`sed -n "${cur_location}{p;q}" ${HOME}/.vpn-locations.session`
-			[ ${cur_location} -lt ${num_locations} ] &&\
-				cur_location=$(( cur_location + 1 )) ||\
-				cur_location=1
+			location=`sed -n "${cur_loc}{p;q}" ${HOME}/.vpn-locations.session`
+			cur_loc=$(( (cur_loc + 1) % N_loc ))
+			
 			echo "Location: ${location}"
 		else 
 			location=""
