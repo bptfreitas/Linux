@@ -271,7 +271,9 @@ fi
 # moving files to DESTDIR
 echo "Moving \"${tmpdir}\" to \"${outdir}\""
 
-cp -r "${tmpdir}/" "${outdir}/"
+rsync -rauv "${tmpdir}/" "${outdir}/"
+
+## cp -r "${tmpdir}/" "${outdir}/"
 rm -rf "${tmpdir}"
 
 # copy selected folder structure to output dir
