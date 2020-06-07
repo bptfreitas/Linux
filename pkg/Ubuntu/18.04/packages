@@ -7,6 +7,7 @@ bison
 build-essential
 cdbs
 codeblocks
+cryptsetup
 curl
 cvs
 dbus
@@ -23,6 +24,7 @@ gawk
 gettext
 gimp
 git
+gparted
 graphviz
 imagemagick
 lib32gcc1
@@ -44,12 +46,15 @@ libsqlite3-dev
 libtool
 libvorbis-dev
 libxss1
+mysql-server
+mysql-workbench
 nfs-common
 nfs-kernel-server
 openjdk-8-jdk
 openssl
 php
 php-mysql
+pinta
 pkg-config
 playonlinux
 python-bs4
@@ -58,6 +63,7 @@ python-mechanize
 qt4-dev-tools
 rar
 rdesktop
+samba
 scilab
 scratch
 shutter
@@ -72,13 +78,9 @@ texlive-latex-extra
 texlive-math-extra
 texlive-publishers
 texstudio
+tor
 unrar
 wavemon
 wireshark
 wxpython
 xtightvncviewer
-samba
-mysql-server
-mysql-workbench
-gparted
-tor
