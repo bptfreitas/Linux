@@ -135,11 +135,9 @@ setup)
     # configuring router capabilities #
     ###################################
 
-    # reseting configuration
+    # resetting configuration
     sudo iptables -F FORWARD
-    sudo iptables -t nat -F POSTROUTING
-
-    # flushing all firewall status
+    sudo iptables -t nat -F POSTROUTING 
     sudo iptables -P FORWARD ACCEPT
 
     echo 1 | sudo tee /proc/sys/net/ipv4/ip_forward
@@ -210,9 +208,8 @@ setup)
 	sudo systemctl disable router.service
 
     echo "
-    # Contents of /etc/systemd/system/firewall.service
     [Unit]
-    Description=Configuring router startup
+    Description=Configures router startup
     After=network.target
     Requires=network.target
 
@@ -220,6 +217,7 @@ setup)
     Type=oneshot
     RemainAfterExit=yes
     ExecStart=/sbin/iptables-restore /root/router.rules
+    ExecStart=/bin/echo 1 | sudo tee /proc/sys/net/ipv4/ip_forward
     # ExecStartPost=SERVICES_FOLDER/scripts/config-fw.sh open msteams
 
     [Install]
