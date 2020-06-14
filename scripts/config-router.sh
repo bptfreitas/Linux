@@ -158,8 +158,13 @@ setup)
         done
     fi
 
-    # discards tcp connections with resets and drop everything else
+    # discards tcp connections with resets
     sudo iptables -A FORWARD -i ${LAN} -p tcp -j REJECT --reject-with tcp-reset
+
+    # reject udp packets with host unreachable
+    sudo iptables -A FORWARD -p udp -j REJECT --reject-with icmp-host-unreachable
+
+    # drop anything else
     sudo iptables -P FORWARD DROP
 
     #########################################
@@ -183,7 +188,7 @@ setup)
 
     # drop or reject everything else 
     sudo iptables -A INPUT -p tcp -j REJECT --reject-with tcp-reset
-    sudo iptables -A INPUT -p udp -j REJECT --reject-with icmp-host-unreachable    
+    sudo iptables -A INPUT -p udp -j REJECT --reject-with icmp-host-unreachable
 
     # default policy is drop
     sudo iptables -P INPUT DROP
