@@ -162,8 +162,8 @@ open)
 
         # SSH 
         ssh)
-            sudo iptables -I INPUT 5 -p tcp --sport 22 --dport 22 -j ACCEPT
-            sudo iptables -I INPUT 6 -p tcp --sport 22 --dport 22 -j ACCEPT
+            sudo iptables -I INPUT 4 -p tcp --sport 22 --dport 22 -j ACCEPT
+            sudo iptables -I INPUT 5 -p udp --sport 22 --dport 22 -j ACCEPT
 
             sudo iptables -I OUTPUT 1 -p udp --sport 22 --dport 22 -j ACCEPT
             sudo iptables -I OUTPUT 2 -p tcp --sport 22 --dport 22 -j ACCEPT        
@@ -198,7 +198,7 @@ close)
             for chain in INPUT OUTPUT; do
                 while :; do
                     rule=`sudo iptables -S ${chain} |\
-                        grep -no -m 1 '8006' |\
+                        grep -no -m 1 '8006' | head -1 |\
                         cut -f1 -d':'`
                     rule=$(( rule -1 ))        
                     [ ${rule} -gt 0 ] && sudo iptables -D ${chain} ${rule} || break
@@ -211,10 +211,11 @@ close)
             for chain in INPUT OUTPUT; do
                 while :; do
                     rule=`sudo iptables -S ${chain} |\
-                        grep -no -m 1 '22' |\
+                        grep -no -m 1 '22' | head -1 |\
                         cut -f1 -d':'`
-                    rule=$(( rule -1 ))        
+                    rule=$(( rule -1 ))      
                     [ ${rule} -gt 0 ] && sudo iptables -D ${chain} ${rule} || break
+                    echo "Removed rule ${rule} from ${chain} ..."
                 done
             done
             ;; # end: close SSH            
@@ -225,6 +226,7 @@ close)
                 while :; do
                     rule=`sudo iptables -S ${chain} |\
                         grep -no -m 1 '3478:3481|13.107.64.0|52.112.0.0|52.120.0.0' |\
+                        head -1 |\
                         cut -f1 -d':'`
                     rule=$(( rule -1 ))        
                     [ ${rule} -gt 0 ] && sudo iptables -D ${chain} ${rule} || break
