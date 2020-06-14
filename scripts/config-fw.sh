@@ -162,11 +162,11 @@ open)
 
         # SSH 
         ssh)
-            sudo iptables -I INPUT 4 -p tcp --sport 22 --dport 22 -j ACCEPT
-            sudo iptables -I INPUT 5 -p udp --sport 22 --dport 22 -j ACCEPT
+            sudo iptables -I INPUT 4 -p tcp --dport 22 -j ACCEPT
+            sudo iptables -I INPUT 5 -p udp --dport 22 -j ACCEPT
 
-            sudo iptables -I OUTPUT 1 -p udp --sport 22 --dport 22 -j ACCEPT
-            sudo iptables -I OUTPUT 2 -p tcp --sport 22 --dport 22 -j ACCEPT        
+            sudo iptables -I OUTPUT 1 -p udp --sport 22 -j ACCEPT
+            sudo iptables -I OUTPUT 2 -p tcp --sport 22 -j ACCEPT        
             ;; # end: open proxmox            
 
         # Microsoft Teams
