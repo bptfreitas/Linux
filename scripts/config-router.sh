@@ -11,7 +11,7 @@ fi
 option="$1"
 shift
 
-case option in
+case $option in
 
 setup)
 
@@ -45,24 +45,26 @@ setup)
 
     if [[ "${LAN}" == "" ]]; then 
         echo "[ERROR] LAN interface not set: \"${LAN}\""
-        exit
+        exit -1
     else
         echo "LAN interface: ${LAN}"
     fi
 
     if [[ "${WAN}" == "" ]]; then 
         echo "[ERROR] LAN interface not set: \"${WAN}\""
-        exit
+        exit -1
     else
         echo "WAN interface: ${WAN}"
     fi
 
-    echo "WAN interface: ${WAN}"
-
-
     if [[ -n $1 ]]; then
         echo "Last line of file specified as non-opt/last argument:"
         tail -1 "$1"
+    fi
+
+    if  [[ "`locate ifconfig`" == "" ]]; then 
+        echo "net-tools not found - installing ..."
+        sudo apt -y install net-tools
     fi
 
     ############################
@@ -72,10 +74,10 @@ setup)
     echo "checking dhcpd daemon ... "
     if [ "`which dhcpd`" == "" ]; then 
         echo "dhcpd daemon not found. Installing ..."
-        sudo apt install isc-dhcp-server
+        sudo apt -y install isc-dhcp-server
     fi
 
-    if [[ !-f /etc/dhcp/dhcpd.conf ]]; then 
+    if [[ ! -f /etc/dhcp/dhcpd.conf ]]; then 
         echo "[ERROR] dhcp.conf file not found"
     fi
 
@@ -115,21 +117,17 @@ setup)
     sudo killall dhcpd
     sudo dhcpd
 
-
     ################################
     # configuring network settings #
     ################################
 
-    echo "
-    network:
-    ethernets:
-        ${WAN}:
-            dhcp4: true
-        ${LAN}:
-            addresses: [192.168.200.1/24]
-            dhcp4: false
-    version: 2
-    " | sudo tee /etc/netplan/50-cloud-init.yaml
+    echo "network:" | sudo tee /etc/netplan/50-cloud-init.yaml
+    echo "    ethernets:" | sudo tee -a /etc/netplan/50-cloud-init.yaml
+    echo "        ${WAN}:" | sudo tee -a /etc/netplan/50-cloud-init.yaml
+    echo "            dhcp4: true" | sudo tee -a /etc/netplan/50-cloud-init.yaml
+    echo "        ${LAN}:" | sudo tee -a /etc/netplan/50-cloud-init.yaml
+    echo "            addresses: [192.168.200.1/24]" | sudo tee -a /etc/netplan/50-cloud-init.yaml
+    echo "            dhcp4: false" | sudo tee -a /etc/netplan/50-cloud-init.yaml
 
     sudo netplan apply
 
@@ -137,11 +135,12 @@ setup)
     # configuring router capabilities #
     ###################################
 
+    # reseting configuration
+    sudo iptables -F FORWARD
+    sudo iptables -t nat -F POSTROUTING
+
     # flushing all firewall status
-    sudo iptables -P INPUT ACCEPT
-    sudo iptables -P OUTPUT ACCEPT
     sudo iptables -P FORWARD ACCEPT
-    sudo iptables -F
 
     echo 1 | sudo tee /proc/sys/net/ipv4/ip_forward
     sudo iptables -t nat -A POSTROUTING -o ${WAN} -j MASQUERADE
@@ -166,7 +165,7 @@ setup)
     sudo iptables -P FORWARD DROP
 
     #########################################
-    # configuring basic firewall for router #
+    # configuring INPUT firewall for router #
     #########################################
 
     # discards ICMPs
@@ -191,18 +190,46 @@ setup)
     # default policy is drop
     sudo iptables -P INPUT DROP
 
+    ##########################################
+    # configuring OUTPUT firewall for router #
+    ##########################################
 
-
-    
     sudo iptables -A OUTPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
-    sudo iptables -A FORWARD -m state --state ESTABLISHED,RELATED -j ACCEPT
 
     sudo iptables -P INPUT DROP
     sudo iptables -P FORWARD DROP
     sudo iptables -P OUTPUT DROP
 
-    # restarts interfaces 
+    sudo iptables-save | sudo tee /root/router.rules
 
+    ########################################
+    # creating a service to make it simple #
+    ########################################
+
+    sudo systemctl stop router.service
+	sudo systemctl disable router.service
+
+    echo "
+    # Contents of /etc/systemd/system/firewall.service
+    [Unit]
+    Description=Configuring router startup
+    After=network.target
+    Requires=network.target
+
+    [Service]
+    Type=oneshot
+    RemainAfterExit=yes
+    ExecStart=/sbin/iptables-restore /root/router.rules
+    # ExecStartPost=SERVICES_FOLDER/scripts/config-fw.sh open msteams
+
+    [Install]
+    WantedBy=multi-user.target " | sudo tee /etc/systemd/system/router.service
+
+    sudo systemctl daemon-reload
+
+    sudo systemctl enable router.service
+
+    # restarts interfaces 
     sudo ifconfig ${WAN} down
     sudo ifconfig ${LAN} down
 
