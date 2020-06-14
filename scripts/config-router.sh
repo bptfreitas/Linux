@@ -140,6 +140,9 @@ setup)
     sudo iptables -F INPUT
     sudo iptables -F OUTPUT
     sudo iptables -F FORWARD
+    sudo iptables -P INPUT ACCEPT
+    sudo iptables -P FORWARD ACCEPT
+    sudo iptables -P OUTPUT ACCEPT
 
     # allow forwarding
     echo 1 | sudo tee /proc/sys/net/ipv4/ip_forward
@@ -196,9 +199,6 @@ setup)
     ##########################################
     # configuring OUTPUT firewall for router #
     ##########################################
-
-    
-
 
     # default policies
     sudo iptables -P INPUT DROP
