@@ -192,17 +192,14 @@ setup)
     # configuring OUTPUT firewall for router #
     ##########################################
 
-    sudo iptables -A OUTPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
-
-    sudo iptables -P INPUT DROP
-    sudo iptables -P FORWARD DROP
-    sudo iptables -P OUTPUT DROP
-
-    sudo iptables-save | sudo tee /root/router.rules
+    sudo iptables -P OUTPUT ACCEPT
 
     ########################################
     # creating a service to make it simple #
     ########################################
+
+    # saving rules
+    sudo iptables-save | sudo tee /root/router.rules
 
     sudo systemctl stop router.service
 	sudo systemctl disable router.service
