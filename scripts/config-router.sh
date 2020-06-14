@@ -51,7 +51,7 @@ setup)
     fi
 
     if [[ "${WAN}" == "" ]]; then 
-        echo "[ERROR] LAN interface not set: \"${WAN}\""
+        echo "[ERROR] WAN interface not set: \"${WAN}\""
         exit -1
     else
         echo "WAN interface: ${WAN}"
@@ -62,7 +62,7 @@ setup)
         tail -1 "$1"
     fi
 
-    if  [[ "`locate ifconfig`" == "" ]]; then 
+    if  [[ "`which ifconfig`" == "" ]]; then 
         echo "net-tools not found - installing ..."
         sudo apt -y install net-tools
     fi
@@ -144,6 +144,10 @@ setup)
     sudo iptables -P FORWARD ACCEPT
     sudo iptables -P OUTPUT ACCEPT
 
+    # restarting WAN
+    sudo ifdown ${WAN}
+    sudo ifup ${WAN}
+
     # allow forwarding
     echo 1 | sudo tee /proc/sys/net/ipv4/ip_forward
     sudo iptables -t nat -A POSTROUTING -o ${WAN} -j MASQUERADE
@@ -178,6 +182,9 @@ setup)
 
     # drop broadcasts 
     sudo iptables -A INPUT -m addrtype --dst-type BROADCAST -j DROP
+
+    # allow SSH connections 
+    sudo iptables -A INPUT -p tcp --sport 22 --dport 22 -j ACCEPT
 
     # allow DNS
     sudo iptables -A INPUT -p udp --dport 53 -j ACCEPT
