@@ -160,6 +160,15 @@ open)
             sudo iptables -I OUTPUT 2 -p tcp --dport 8006 -j ACCEPT        
             ;; # end: open proxmox
 
+        # SSH 
+        ssh)
+            sudo iptables -I INPUT 5 -p tcp --sport 22 --dport 22 -j ACCEPT
+            sudo iptables -I INPUT 6 -p tcp --sport 22 --dport 22 -j ACCEPT
+
+            sudo iptables -I OUTPUT 1 -p udp --sport 22 --dport 22 -j ACCEPT
+            sudo iptables -I OUTPUT 2 -p tcp --sport 22 --dport 22 -j ACCEPT        
+            ;; # end: open proxmox            
+
         # Microsoft Teams
         msteams)
             sudo iptables -I INPUT 4 -p udp --sport 3478:3481 -j ACCEPT
@@ -196,6 +205,19 @@ close)
                 done
             done
             ;; # end: close proxmox
+
+        # SSH
+        ssh)
+            for chain in INPUT OUTPUT; do
+                while :; do
+                    rule=`sudo iptables -S ${chain} |\
+                        grep -no -m 1 '22' |\
+                        cut -f1 -d':'`
+                    rule=$(( rule -1 ))        
+                    [ ${rule} -gt 0 ] && sudo iptables -D ${chain} ${rule} || break
+                done
+            done
+            ;; # end: close SSH            
 
         # Microsoft Teams
         msteams)
