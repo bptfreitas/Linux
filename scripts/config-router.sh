@@ -177,6 +177,10 @@ setup)
     # drop broadcasts 
     sudo iptables -A INPUT -m addrtype --dst-type BROADCAST -j DROP
 
+    # allow DNS
+    sudo iptables -A INPUT -p udp --dport 53 -j ACCEPT
+    sudo iptables -A INPUT -p tcp --dport 53 -j ACCEPT
+
     # allow incoming HTTP
     sudo iptables -A INPUT -p tcp --sport 80 -j ACCEPT
 
@@ -229,7 +233,6 @@ setup)
     echo "WantedBy=multi-user.target" | sudo tee -a ${serviceunit}
 
     sudo systemctl daemon-reload
-
     sudo systemctl enable router.service
 
     # restarts interfaces 
@@ -240,6 +243,16 @@ setup)
     sudo ifconfig ${LAN} up
 
     ;;
+
+stop)
+    sudo iptables -F 
+    sudo iptables -P INPUT ACCEPT
+    sudo iptables -P FORWARD ACCEPT
+    sudo iptables -P OUTPUT ACCEPT
+
+    sudo systemctl stop router.service
+    ;;
+
 
 *)
     echo "Invalid option: ${option}"
