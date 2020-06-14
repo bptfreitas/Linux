@@ -207,21 +207,24 @@ setup)
     sudo systemctl stop router.service
 	sudo systemctl disable router.service
 
-    echo "
-    [Unit]
-    Description=Configures router startup
-    After=network.target
-    Requires=network.target
+    serviceunit=/etc/systemd/system/router.service
+    echo "[Unit]" | sudo tee ${serviceunit}
+    echo "Description=Configures router startup" | sudo tee -a ${serviceunit}
+    echo "After=network.target" | sudo tee -a ${serviceunit}
+    echo "Requires=network.target" | sudo tee -a ${serviceunit}
 
-    [Service]
-    Type=oneshot
-    RemainAfterExit=yes
-    ExecStart=/sbin/iptables-restore /root/router.rules
-    ExecStart=/bin/echo 1 | sudo tee /proc/sys/net/ipv4/ip_forward
+    echo -ne "\n" | sudo tee -a ${serviceunit}
+
+    echo "[Service]" | sudo tee -a ${serviceunit}
+    echo "Type=oneshot" | sudo tee -a ${serviceunit}
+    echo "RemainAfterExit=yes" | sudo tee -a ${serviceunit}
+    echo "ExecStart=/sbin/iptables-restore /root/router.rules" | sudo tee -a ${serviceunit}
+    echo "ExecStart=/bin/echo 1 | sudo tee /proc/sys/net/ipv4/ip_forward" | sudo tee -a ${serviceunit}
     # ExecStartPost=SERVICES_FOLDER/scripts/config-fw.sh open msteams
+    echo -ne "\n" | sudo tee -a ${serviceunit} 
 
-    [Install]
-    WantedBy=multi-user.target " | sudo tee /etc/systemd/system/router.service
+    echo "[Install]" | sudo tee -a ${serviceunit}
+    echo "WantedBy=multi-user.target" | sudo tee -a ${serviceunit}
 
     sudo systemctl daemon-reload
 
