@@ -67,6 +67,9 @@ setup)
         sudo apt -y install net-tools
     fi
 
+
+    sudo apt -y install ssh
+
     ############################
     # configuring dhcpd daemon #
     ############################
@@ -184,7 +187,7 @@ setup)
     sudo iptables -A INPUT -m addrtype --dst-type BROADCAST -j DROP
 
     # allow SSH connections 
-    sudo iptables -A INPUT -p tcp --sport 22 --dport 22 -j ACCEPT
+    sudo iptables -A INPUT -p tcp --dport 22 -j ACCEPT
 
     # allow DNS
     sudo iptables -A INPUT -p udp --dport 53 -j ACCEPT
