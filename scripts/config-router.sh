@@ -170,13 +170,13 @@ setup)
         sudo iptables -I FORWARD 3 -i ${LAN} -d ${site} -j ACCEPT
     done
 
-    sudo iptables -A FORWARD -m state --state ESTABLISHED,RELATED -j ACCEPT
+    sudo iptables -A FORWARD -i ${LAN} -m state --state ESTABLISHED,RELATED -j ACCEPT
 
     # discards tcp connections with resets
     sudo iptables -A FORWARD -i ${LAN} -p tcp -j REJECT --reject-with tcp-reset
 
     # reject udp packets with host unreachable
-    sudo iptables -A FORWARD -p udp -j REJECT --reject-with icmp-host-unreachable
+    sudo iptables -A FORWARD -i ${LAN} -p udp -j REJECT --reject-with icmp-host-unreachable
 
     #########################################
     # configuring INPUT firewall for router #
