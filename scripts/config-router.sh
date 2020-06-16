@@ -43,6 +43,13 @@ setup)
     done
     set -- "${POSITIONAL[@]}" # restore positional parameters
 
+    # resetting configuration
+    sudo iptables -P INPUT ACCEPT
+    sudo iptables -P FORWARD ACCEPT
+    sudo iptables -P OUTPUT ACCEPT
+
+    sudo iptables -F    
+
     if [[ "${LAN}" == "" ]]; then 
         echo "[ERROR] LAN interface not set: \"${LAN}\""
         exit -1
@@ -66,7 +73,6 @@ setup)
         echo "net-tools not found - installing ..."
         sudo apt -y install net-tools
     fi
-
 
     sudo apt -y install ssh
 
@@ -141,42 +147,28 @@ setup)
     # configuring router capabilities #
     ###################################
 
-    # resetting configuration
-    sudo iptables -t nat -F POSTROUTING     
-    sudo iptables -F INPUT
-    sudo iptables -F OUTPUT
-    sudo iptables -F FORWARD
-    sudo iptables -P INPUT ACCEPT
-    sudo iptables -P FORWARD ACCEPT
-    sudo iptables -P OUTPUT ACCEPT
-
     # restarting WAN and LAN
     sudo ifconfig ${WAN} down
     sudo ifconfig ${WAN} up
 
     sudo ifconfig ${LAN} down
-    sudo ifconfig ${LAN} up    
-
-    # allow forwarding in the kernel
-    echo 1 | sudo tee /proc/sys/net/ipv4/ip_forward
-    sudo iptables -t nat -A POSTROUTING -o ${WAN} -j MASQUERADE
+    sudo ifconfig ${LAN} up
 
     # foward DNS from LAN
-    sudo iptables -A FORWARD -i ${LAN} -p udp --dport 53 -j ACCEPT
-    sudo iptables -A FORWARD -i ${LAN} -p tcp --dport 53 -j ACCEPT
+    sudo iptables -A FORWARD -p udp --dport 53 -j ACCEPT
 
-    # allow forwarding of selected sites from LAN
-    for site in $(sudo cat /root/allowed-sites); do
-        sudo iptables -I FORWARD 3 -i ${LAN} -d ${site} -j ACCEPT
-    done
-
-    sudo iptables -A FORWARD -i ${LAN} -m state --state ESTABLISHED,RELATED -j ACCEPT
+    # allow established and related connections
+    sudo iptables -A FORWARD -m state --state ESTABLISHED,RELATED -j ACCEPT
 
     # discards tcp connections with resets
     sudo iptables -A FORWARD -i ${LAN} -p tcp -j REJECT --reject-with tcp-reset
 
     # reject udp packets with host unreachable
     sudo iptables -A FORWARD -i ${LAN} -p udp -j REJECT --reject-with icmp-host-unreachable
+
+    # allow forwarding in the kernel
+    echo 1 | sudo tee /proc/sys/net/ipv4/ip_forward
+    sudo iptables -t nat -A POSTROUTING -o ${WAN} -j MASQUERADE    
 
     #########################################
     # configuring INPUT firewall for router #
@@ -193,7 +185,6 @@ setup)
 
     # allow DNS
     sudo iptables -A INPUT -p udp --dport 53 -j ACCEPT
-    sudo iptables -A INPUT -p tcp --dport 53 -j ACCEPT
 
     # allow incoming HTTP
     sudo iptables -A INPUT -p tcp --sport 80 -j ACCEPT
@@ -256,6 +247,12 @@ setup)
 
     sudo ifconfig ${LAN} down
     sudo ifconfig ${LAN} up
+
+    # allow forwarding of selected sites from LAN
+    for site in $(sudo cat /root/allowed-sites); do
+        echo "${site}"        
+        sudo iptables -I FORWARD 2 -d ${site} -j ACCEPT
+    done    
     ;;
 
 stop)
