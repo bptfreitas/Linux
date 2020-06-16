@@ -4,6 +4,20 @@ DEBUG=0
 CONF_OUTPUT=0
 WITH_TUN=0
 
+remove_rules(){
+    match="$1"
+    for chain in INPUT OUTPUT; do
+        while :; do
+            rule=`sudo iptables -S ${chain} |\
+                grep -no -m 1 "${match}" | head -1 |\
+                cut -f1 -d':'`
+            rule=$(( rule -1 ))        
+            [ ${rule} -gt 0 ] && sudo iptables -D ${chain} ${rule} || break
+        done
+    done
+}
+
+
 action="$1"
 shift
 
@@ -152,6 +166,15 @@ open)
     program=${POSITIONAL[0]}
 
     case $program in
+
+        # selected sites, as seen in $HOME/.allowed-sites files
+        sites)
+            for site in $(cat "${HOME}/.allowed-sites"); do
+                echo "Allowing ${site} ..."
+                sudo iptables -I OUTPUT 3 -d ${site} -j ACCEPT
+            done
+            ;;
+
         # proxmox virtualization tool
         proxmox)
             sudo iptables -I INPUT 5 -p tcp --sport 8006 -j ACCEPT
@@ -167,7 +190,7 @@ open)
 
             sudo iptables -I OUTPUT 1 -p udp --sport 22 -j ACCEPT
             sudo iptables -I OUTPUT 2 -p tcp --sport 22 -j ACCEPT        
-            ;; # end: open proxmox            
+            ;; # end: open ssh            
 
         # Microsoft Teams
         msteams)
@@ -193,6 +216,22 @@ close)
     program=${POSITIONAL[0]}
 
     case $program in
+
+        # open selected sites
+        sites)
+            for site in $(cat ${HOME}/.allowed-sites); do
+                for chain in INPUT OUTPUT; do
+                    while :; do
+                        rule=`sudo iptables -L ${chain} |\
+                            grep -no -m 1 "${site}" | head -1 |\
+                            cut -f1 -d':'`
+                        rule=$(( rule -1 ))
+                        [ ${rule} -gt 0 ] && sudo iptables -D ${chain} ${rule} || break
+                    done
+                done
+            done
+            ;; #end: close sites
+
         # proxmox virtualization tool
         proxmox)
             for chain in INPUT OUTPUT; do
