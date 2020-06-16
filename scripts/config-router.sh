@@ -104,8 +104,7 @@ setup)
         option broadcast-address 192.168.200.255; #Essa linha é o endereço de broadcast (neste caso).
 
         #Aqui você coloca os servidores DNS de terceiros ou seu DNS próprio configurado no BIND. Nesse caso coloquei o DNS do Google.
-        option domain-name-servers 8.8.8.8; 
-        option domain-name-servers 8.8.4.4;
+        option domain-name-servers 8.8.8.8;
     }
     " | sudo tee /etc/dhcp/dhcpd.conf
 
@@ -124,13 +123,17 @@ setup)
     # configuring network settings #
     ################################
 
-    echo "network:" | sudo tee /etc/netplan/50-cloud-init.yaml
-    echo "    ethernets:" | sudo tee -a /etc/netplan/50-cloud-init.yaml
-    echo "        ${WAN}:" | sudo tee -a /etc/netplan/50-cloud-init.yaml
-    echo "            dhcp4: true" | sudo tee -a /etc/netplan/50-cloud-init.yaml
-    echo "        ${LAN}:" | sudo tee -a /etc/netplan/50-cloud-init.yaml
-    echo "            addresses: [192.168.200.1/24]" | sudo tee -a /etc/netplan/50-cloud-init.yaml
-    echo "            dhcp4: false" | sudo tee -a /etc/netplan/50-cloud-init.yaml
+    netplan_cfg=/etc/netplan/99-router.yaml
+
+    sudo rm -f /etc/netplan/*
+
+    echo "network:" | sudo tee ${netplan_cfg}
+    echo "    ethernets:" | sudo tee -a ${netplan_cfg}
+    echo "        ${WAN}:" | sudo tee -a ${netplan_cfg}
+    echo "            dhcp4: true" | sudo tee -a ${netplan_cfg}
+    echo "        ${LAN}:" | sudo tee -a ${netplan_cfg}
+    echo "            addresses: [192.168.200.1/24]" | sudo tee -a ${netplan_cfg}
+    echo "            dhcp4: false" | sudo tee -a ${netplan_cfg}
 
     sudo netplan apply
 
@@ -147,28 +150,27 @@ setup)
     sudo iptables -P FORWARD ACCEPT
     sudo iptables -P OUTPUT ACCEPT
 
-    # restarting WAN
-    sudo ifdown ${WAN}
-    sudo ifup ${WAN}
+    # restarting WAN and LAN
+    sudo ifconfig ${WAN} down
+    sudo ifconfig ${WAN} up
 
-    # allow forwarding
+    sudo ifconfig ${LAN} down
+    sudo ifconfig ${LAN} up    
+
+    # allow forwarding in the kernel
     echo 1 | sudo tee /proc/sys/net/ipv4/ip_forward
     sudo iptables -t nat -A POSTROUTING -o ${WAN} -j MASQUERADE
 
-    # allow DNS from LAN to pass
+    # foward DNS from LAN
     sudo iptables -A FORWARD -i ${LAN} -p udp --dport 53 -j ACCEPT
     sudo iptables -A FORWARD -i ${LAN} -p tcp --dport 53 -j ACCEPT
 
-    # allow selected sites from LAN
-    sudo iptables -A FORWARD -i ${LAN} -d www.google.com -j ACCEPT
-    sudo iptables -A FORWARD -i ${LAN} -d www.cefet-rj.br -j ACCEPT
-    sudo iptables -A FORWARD -i ${LAN} -d eadfriburgo.cefet-rj.br -j ACCEPT
+    # allow forwarding of selected sites from LAN
+    for site in $(sudo cat /root/allowed-sites); do
+        sudo iptables -I FORWARD 3 -i ${LAN} -d ${site} -j ACCEPT
+    done
 
-    if [[ -f allowed-sites ]]; then 
-        for site in $(cat allowed-sites); do
-            sudo iptables -A FORWARD -i ${LAN} -d ${site} -j ACCEPT
-        done
-    fi
+    sudo iptables -A FORWARD -m state --state ESTABLISHED,RELATED -j ACCEPT
 
     # discards tcp connections with resets
     sudo iptables -A FORWARD -i ${LAN} -p tcp -j REJECT --reject-with tcp-reset
@@ -196,7 +198,7 @@ setup)
     # allow incoming HTTP
     sudo iptables -A INPUT -p tcp --sport 80 -j ACCEPT
 
-    # allow incoming HTTPS
+    # allow incoming SSL/HTTPS
     sudo iptables -A INPUT -p tcp --sport 443 -j ACCEPT
 
     # accept established incoming connections
@@ -226,6 +228,7 @@ setup)
 	sudo systemctl disable router.service
 
     serviceunit=/etc/systemd/system/router.service
+    
     echo "[Unit]" | sudo tee ${serviceunit}
     echo "Description=Configures router startup" | sudo tee -a ${serviceunit}
     echo "After=network.target" | sudo tee -a ${serviceunit}
@@ -249,11 +252,10 @@ setup)
 
     # restarts interfaces 
     sudo ifconfig ${WAN} down
-    sudo ifconfig ${LAN} down
-
     sudo ifconfig ${WAN} up
-    sudo ifconfig ${LAN} up
 
+    sudo ifconfig ${LAN} down
+    sudo ifconfig ${LAN} up
     ;;
 
 stop)
