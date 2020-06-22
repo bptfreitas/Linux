@@ -203,22 +203,37 @@ setup)
     # configuring OUTPUT firewall for router #
     ##########################################
 
-    # default policies
+
+    ############################
+    # setting default policies #
+    ############################
+
     sudo iptables -P INPUT DROP
     sudo iptables -P FORWARD DROP
     sudo iptables -P OUTPUT ACCEPT
 
-    ########################################
-    # creating a service to make it simple #
-    ########################################
+    ################################################
+    # creating a service to make restarting simple #
+    ################################################
+
+    echo "
+    #!/bin/bash
+
+    for site in \$(sudo cat /root/allowed-sites); do
+        echo \"Allowing: \${site}\"
+        sudo iptables -I FORWARD 2 -d \${site} --dport 80 -j ACCEPT
+    done
+
+    " | sudo tee /root/router_allowed-sites.sh
+    sudo chmod +x /root/router_allowed-sites.sh 
+
+    serviceunit=/etc/systemd/system/router.service    
 
     # saving rules
     sudo iptables-save | sudo tee /root/router.rules
 
     sudo systemctl stop router.service
 	sudo systemctl disable router.service
-
-    serviceunit=/etc/systemd/system/router.service
     
     echo "[Unit]" | sudo tee ${serviceunit}
     echo "Description=Configures router startup" | sudo tee -a ${serviceunit}
@@ -230,8 +245,10 @@ setup)
     echo "[Service]" | sudo tee -a ${serviceunit}
     echo "Type=oneshot" | sudo tee -a ${serviceunit}
     echo "RemainAfterExit=yes" | sudo tee -a ${serviceunit}
-    echo "ExecStart=/sbin/iptables-restore /root/router.rules" | sudo tee -a ${serviceunit}
-    echo "ExecStart=/bin/echo 1 | sudo tee /proc/sys/net/ipv4/ip_forward" | sudo tee -a ${serviceunit}
+    echo "ExecStartPre=/bin/echo 1 | sudo tee /proc/sys/net/ipv4/ip_forward" | sudo tee -a ${serviceunit}
+    echo "ExecStart=/root/config-router.sh start" | sudo tee -a ${serviceunit}
+    echo "ExecStartPost=/root/config-router.sh allow-sites" | sudo tee -a ${serviceunit}
+    echo "ExecStop=/root/config-router.sh stop" | sudo tee -a ${serviceunit}  
     # ExecStartPost=SERVICES_FOLDER/scripts/config-fw.sh open msteams
     echo -ne "\n" | sudo tee -a ${serviceunit} 
 
@@ -249,19 +266,28 @@ setup)
     sudo ifconfig ${LAN} up
 
     # allow forwarding of selected sites from LAN
+    sudo cp $0 /root/config-router.sh
+    ;;
+
+
+
+allow-sites)
+    # allow forwarding of selected sites from LAN
     for site in $(sudo cat /root/allowed-sites); do
         echo "${site}"        
         sudo iptables -I FORWARD 2 -d ${site} -j ACCEPT
-    done    
+    done
     ;;
+
+start)
+    sudo /sbin/iptables-restore /root/router.rules
+    ;;    
 
 stop)
     sudo iptables -F 
     sudo iptables -P INPUT ACCEPT
     sudo iptables -P FORWARD ACCEPT
     sudo iptables -P OUTPUT ACCEPT
-
-    sudo systemctl stop router.service
     ;;
 
 
