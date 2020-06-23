@@ -48,7 +48,8 @@ setup)
     sudo iptables -P FORWARD ACCEPT
     sudo iptables -P OUTPUT ACCEPT
 
-    sudo iptables -F    
+    sudo iptables -F
+    sudo iptables -t nat -F
 
     if [[ "${LAN}" == "" ]]; then 
         echo "[ERROR] LAN interface not set: \"${LAN}\""
@@ -81,7 +82,7 @@ setup)
     ############################
 
     echo "checking dhcpd daemon ... "
-    if [ "`which dhcpd`" == "" ]; then 
+    if [[ "`which dhcpd`" == "" ]]; then 
         echo "dhcpd daemon not found. Installing ..."
         sudo apt -y install isc-dhcp-server
     fi
@@ -288,6 +289,7 @@ stop)
     sudo iptables -P INPUT ACCEPT
     sudo iptables -P FORWARD ACCEPT
     sudo iptables -P OUTPUT ACCEPT
+    sudo iptables -t nat -F POSTROUTING
     ;;
 
 
