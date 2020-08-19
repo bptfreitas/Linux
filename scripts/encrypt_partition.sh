@@ -84,6 +84,8 @@ while :; do
 	[[ $ans == "y" ]] && break || echo "Invalid answer"
 done
 
+echo "Unmounting device ..."
+
 sudo umount ${DEV}
 
 echo "Formatting LUKS device ..."
