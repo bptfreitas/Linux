@@ -119,11 +119,16 @@ myinstall_php()
 
 myinstall_aliases()
 { 
-	[ ! -f ${HOME}/.bash_aliases ] &&> ${HOME}/.bash_aliases
+	> ${HOME}/.bash_aliases
 	
-	echo "alias fw-monitor='while :; do clear; sudo iptables -vnL; sleep 3; done'" >> \
+	echo "alias fw='while :; do clear; sudo iptables -vnL; sleep 3; done'" >> \
 		${HOME}/.bash_aliases
 
+	echo "alias fw-output='while :; do clear; sudo iptables OUTPUT -vnL; sleep 3; done'" >> \
+		${HOME}/.bash_aliases
+
+	echo "alias fw-input='while :; do clear; sudo iptables OUTPUT -vnL; sleep 3; done'" >> \
+		${HOME}/.bash_aliases		
 }
 
 myinstall_env()
@@ -135,7 +140,7 @@ myinstall_env()
 	cp $HOME/.profile $HOME/.profile.`date +"%Y-%m-%d-%H-%M"`.tmp
 
 	# adding script folder to PATH
-	if [ -d "${scripts_folder}" ]; then
+	if [[ -d "${scripts_folder}" ]]; then
 		echo -n "scripts folder found, adding to PATH ..."
 
 		egrep -o -q "${scripts_folder}" ~/.profile
