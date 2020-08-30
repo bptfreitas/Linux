@@ -1,6 +1,6 @@
 #!/bin/bash
 
-DEBUG=0
+DEBUG=1
 CONF_OUTPUT=0
 WITH_TUN=0
 
@@ -16,7 +16,6 @@ remove_rules(){
         done
     done
 }
-
 
 action="$1"
 shift
@@ -132,11 +131,12 @@ start)
     ########################
     # OUTPUT configuration #
     ########################
+    sudo iptables -F OUTPUT
+    sudo iptables -P OUTPUT ACCEPT
 
-    if [ ${WITH_OUTPUT} -eq 1 ]; then
+    if [[ ${WITH_OUTPUT} -eq 1 ]]; then
         # temporary ACCEPT policy
-        sudo iptables -F OUTPUT
-        sudo iptables -P OUTPUT ACCEPT
+
 
         # allow outgoing DNS
         sudo iptables -A OUTPUT -p udp --sport 53 --dport 53 -j ACCEPT
@@ -158,20 +158,28 @@ start)
 
         # default policy is DROP
         sudo iptables -P OUTPUT DROP 
-
     fi
+
+    # allow_sites
+    sudo iptables -P OUTPUT DROP
     ;; # fim: action start
 
 open)
     program=${POSITIONAL[0]}
 
+    input_rule=${POSITIONAL[1]}
+    output_rule=${POSITIONAL[2]}
+
+    [[ ${input_rule} -gt 1 ]] && input_rule=${input_rule} || input_rule=1
+    [[ ${output_rule} -gt 1 ]] && output_rule=${output_rule} || output_rule=1
+
     case $program in
 
         # selected sites, as seen in $HOME/.allowed-sites files
         sites)
-            for site in $(cat "${HOME}/.allowed-sites"); do
-                echo "Allowing ${site} ..."
-                sudo iptables -I OUTPUT 3 -d ${site} -j ACCEPT
+            for site in $(sudo cat "/root/allowed-sites"); do
+                echo "Allowing ${site}"
+                sudo iptables -I OUTPUT ${output_rule} -d ${site} -j ACCEPT
             done
             ;;
 
@@ -180,7 +188,7 @@ open)
             sudo iptables -I INPUT 5 -p tcp --sport 8006 -j ACCEPT
 
             sudo iptables -I OUTPUT 1 -p udp --dport 8006 -j ACCEPT
-            sudo iptables -I OUTPUT 2 -p tcp --dport 8006 -j ACCEPT        
+            sudo iptables -I OUTPUT 2 -p tcp --dport 8006 -j ACCEPT       
             ;; # end: open proxmox
 
         # SSH 
@@ -194,15 +202,16 @@ open)
 
         # Microsoft Teams
         msteams)
-            sudo iptables -I INPUT 4 -p udp --sport 3478:3481 -j ACCEPT
-            sudo iptables -I INPUT 5 -s 13.107.64.0/18 -j ACCEPT
-            sudo iptables -I INPUT 6 -s 52.112.0.0/14 -j ACCEPT
-            sudo iptables -I INPUT 7 -s 52.120.0.0/14 -j ACCEPT
+            #sudo iptables -I INPUT 4 -p udp --sport 3478:3481 -j ACCEPT
+            #sudo iptables -I INPUT 5 -s 13.107.64.0/18 -j ACCEPT
+            #sudo iptables -I INPUT 6 -s 52.112.0.0/14 -j ACCEPT
+            #sudo iptables -I INPUT 7 -s 52.120.0.0/14 -j ACCEPT
+            sudo iptables -I INPUT 3 -p udp --sport 3478:3481 -j ACCEPT
 
-            sudo iptables -I OUTPUT 1 -p udp --dport 3478:3481 -j ACCEPT
-            sudo iptables -I OUTPUT 2 -d 13.107.64.0/18 -j ACCEPT
-            sudo iptables -I OUTPUT 3 -d 52.112.0.0/14 -j ACCEPT
-            sudo iptables -I OUTPUT 4 -d 52.120.0.0/14 -j ACCEPT            
+            sudo iptables -I OUTPUT ${output_rule} -p udp --dport 3478:3481 -j ACCEPT
+            sudo iptables -I OUTPUT ${output_rule} -d 13.107.64.0/18 -j ACCEPT
+            sudo iptables -I OUTPUT ${output_rule} -d 52.112.0.0/14 -j ACCEPT
+            sudo iptables -I OUTPUT ${output_rule} -d 52.120.0.0/14 -j ACCEPT         
             ;; # end: open msteams
 
         *)
@@ -257,18 +266,22 @@ close)
                     echo "Removed rule ${rule} from ${chain} ..."
                 done
             done
-            ;; # end: close SSH            
+            ;; # end: close SSH        
 
         # Microsoft Teams
         msteams)
             for chain in INPUT OUTPUT; do
                 while :; do
                     rule=`sudo iptables -S ${chain} |\
-                        grep -no -m 1 '3478:3481|13.107.64.0|52.112.0.0|52.120.0.0' |\
-                        head -1 |\
-                        cut -f1 -d':'`
-                    rule=$(( rule -1 ))        
-                    [ ${rule} -gt 0 ] && sudo iptables -D ${chain} ${rule} || break
+                        egrep -n -m 1 '3478:3481|13\.107\.64\.0|52\.112\.0\.0|52\.120\.0\.0' |\
+                        cut -f1 -d':'`                                        
+                    rule=$(( rule -1 ))
+                    [[ $DEBUG -eq 1 ]] && echo "DEBUG: close msteams ${chain} ${rule}"                    
+                    if [[ $rule -gt 0 ]]; then 
+                        sudo iptables -D ${chain} ${rule}
+                    else 
+                        break
+                    fi
                 done
             done
             ;; # end: close msteams
@@ -297,7 +310,7 @@ stop)
         done
     done
 
-    if [ ${WITH_OUTPUT} -eq 1 ]; then 
+    if [[ ${WITH_OUTPUT} -eq 1 ]]; then 
         sudo iptables -F OUTPUT
         sudo iptables -P OUTPUT ACCEPT
     fi
