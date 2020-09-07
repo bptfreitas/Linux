@@ -39,7 +39,7 @@ case $action in
 
         sort "${pkglist}" | uniq > /tmp/pkglist.tmp
 
-		if [[ `diff -q ${pkglist} /tmp/pkglist.tmp` -eq 0 ]]; then 
+		if [[ "`diff -q ${pkglist} /tmp/pkglist.tmp`" != "" ]]; then 
 			mv /tmp/pkglist.tmp "${pkglist}"
 
 			echo -n "Commiting new package list ..."
