@@ -18,6 +18,7 @@ dkms
 doxygen
 execstack
 fakeroot
+fio
 flex
 fortune-mod
 g++
