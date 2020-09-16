@@ -100,10 +100,11 @@ start)
     # from proxmox
     #sudo iptables -A INPUT -i tun+ -p udp --sport 8006 -j ACCEPT
 
-    # allow HTTP requests
-    sudo iptables -A INPUT -p tcp --sport 80 -j ACCEPT
-    # allow SSL requests
-    sudo iptables -A INPUT -p tcp --sport 443 -j ACCEPT    
+    # allow incoming HTTP requests
+    sudo iptables -A INPUT -p tcp --dport 80 -j ACCEPT
+
+    # allow incoming HTTPS inputs
+    # sudo iptables -A INPUT -p tcp --sport 443 -j ACCEPT    
 
     # allow incoming TCP connection in 'related' and 'established' states
     sudo iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
@@ -122,7 +123,7 @@ start)
     sudo iptables -F FORWARD
     sudo iptables -P FORWARD ACCEPT
 
-    ## sudo iptables -A FORWARD -m state --state ESTABLISHED,RELATED -j ACCEPT 
+    # don't allow forward connections
     sudo iptables -A FORWARD -p tcp -j REJECT --reject-with tcp-reset
     sudo iptables -A FORWARD -p udp -j REJECT --reject-with icmp-host-unreachable
 
@@ -185,10 +186,11 @@ open)
 
         # proxmox virtualization tool
         proxmox)
-            sudo iptables -I INPUT 5 -p tcp --sport 8006 -j ACCEPT
+            sudo iptables -I INPUT ${input_rule} -p tcp --sport 8006 -j ACCEPT
+            sudo iptables -I INPUT ${input_rule} -p udp --sport 8006 -j ACCEPT
 
-            sudo iptables -I OUTPUT 1 -p udp --dport 8006 -j ACCEPT
-            sudo iptables -I OUTPUT 2 -p tcp --dport 8006 -j ACCEPT       
+            sudo iptables -I OUTPUT ${output_rule} -p udp --dport 8006 -j ACCEPT
+            sudo iptables -I OUTPUT ${output_rule} -p tcp --dport 8006 -j ACCEPT       
             ;; # end: open proxmox
 
         # SSH 
@@ -202,11 +204,11 @@ open)
 
         # Microsoft Teams
         msteams)
-            #sudo iptables -I INPUT 4 -p udp --sport 3478:3481 -j ACCEPT
-            #sudo iptables -I INPUT 5 -s 13.107.64.0/18 -j ACCEPT
-            #sudo iptables -I INPUT 6 -s 52.112.0.0/14 -j ACCEPT
-            #sudo iptables -I INPUT 7 -s 52.120.0.0/14 -j ACCEPT
-            sudo iptables -I INPUT 3 -p udp --sport 3478:3481 -j ACCEPT
+            # sudo iptables -I INPUT 4 -p udp --sport 3478:3481 -j ACCEPT
+            # sudo iptables -I INPUT 5 -s 13.107.64.0/18 -j ACCEPT
+            # sudo iptables -I INPUT 6 -s 52.112.0.0/14 -j ACCEPT
+            # sudo iptables -I INPUT 7 -s 52.120.0.0/14 -j ACCEPT
+            # sudo iptables -I INPUT 3 -p udp --sport 3478:3481 -j ACCEPT
 
             sudo iptables -I OUTPUT ${output_rule} -p udp --dport 3478:3481 -j ACCEPT
             sudo iptables -I OUTPUT ${output_rule} -d 13.107.64.0/18 -j ACCEPT
@@ -235,7 +237,8 @@ close)
                             grep -no -m 1 "${site}" | head -1 |\
                             cut -f1 -d':'`
                         rule=$(( rule -1 ))
-                        [ ${rule} -gt 0 ] && sudo iptables -D ${chain} ${rule} || break
+                    [[ ${DEBUG} -eq 1 ]] && echo "DEBUG: close proxmox ${chain} ${rule}"
+                    [[ ${rule} -gt 0 ]] && sudo iptables -D ${chain} ${rule} || break
                     done
                 done
             done
@@ -246,10 +249,11 @@ close)
             for chain in INPUT OUTPUT; do
                 while :; do
                     rule=`sudo iptables -S ${chain} |\
-                        grep -no -m 1 '8006' | head -1 |\
+                        egrep -no -m 1 '8006' | head -1 |\
                         cut -f1 -d':'`
-                    rule=$(( rule -1 ))        
-                    [ ${rule} -gt 0 ] && sudo iptables -D ${chain} ${rule} || break
+                    rule=$(( rule -1 ))     
+                    [[ ${DEBUG} -eq 1 ]] && echo "DEBUG: close proxmox ${chain} ${rule}"
+                    [[ ${rule} -gt 0 ]] && sudo iptables -D ${chain} ${rule} || break
                 done
             done
             ;; # end: close proxmox
@@ -261,9 +265,9 @@ close)
                     rule=`sudo iptables -S ${chain} |\
                         grep -no -m 1 '22' | head -1 |\
                         cut -f1 -d':'`
-                    rule=$(( rule -1 ))      
-                    [ ${rule} -gt 0 ] && sudo iptables -D ${chain} ${rule} || break
-                    echo "Removed rule ${rule} from ${chain} ..."
+                    rule=$(( rule -1 ))
+                    [[ $DEBUG -eq 1 ]] && echo "DEBUG: close ssh ${chain} ${rule}"
+                    [[ $rule -gt 0 ]] && sudo iptables -D ${chain} ${rule} || break
                 done
             done
             ;; # end: close SSH        
@@ -276,12 +280,8 @@ close)
                         egrep -n -m 1 '3478:3481|13\.107\.64\.0|52\.112\.0\.0|52\.120\.0\.0' |\
                         cut -f1 -d':'`                                        
                     rule=$(( rule -1 ))
-                    [[ $DEBUG -eq 1 ]] && echo "DEBUG: close msteams ${chain} ${rule}"                    
-                    if [[ $rule -gt 0 ]]; then 
-                        sudo iptables -D ${chain} ${rule}
-                    else 
-                        break
-                    fi
+                    [[ $DEBUG -eq 1 ]] && echo "DEBUG: close msteams ${chain} ${rule}"
+                    [[ $rule -gt 0 ]] && sudo iptables -D ${chain} ${rule} || break
                 done
             done
             ;; # end: close msteams
