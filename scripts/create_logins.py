@@ -75,6 +75,7 @@ script_InsertUsers.write( "#!/bin/bash\n" )
 for student in all_students:
 
 	fullname = student[ NAME_INDEX ].split(' ')
+	password = student[ PASSWORD_INDEX ]
 
 	if len(fullname) < 2:
 		sys.stderr.write("\n[NOTICE] Can't create login for '" + student[name] + "'" )
@@ -83,8 +84,8 @@ for student in all_students:
 
 		sys.stdout.write("\nCreating login '" + login + "'")
 
-		script_InsertUsers.write("sudo adduser --disabled-password --gecos '' " + login + "\n")
-		script_InsertUsers.write("echo '"+login+":" + password + "' | sudo chpasswd\n");
+		script_InsertUsers.write( "sudo adduser --disabled-password --gecos '' " + login + "\n" )
+		script_InsertUsers.write( "echo '" + login + ":" + password + "' | sudo chpasswd\n" )
 
 script_InsertUsers.close()
 
