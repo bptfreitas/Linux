@@ -1,31 +1,101 @@
 #!/usr/bin/python3
  
 # Reads from file 'logins.dat' student names and then creates user logins
-# Each line of 'logins.dat' must be on the format [FULL NAME]:[DEFAULT PASSWORD]
+# Each line of 'logins.dat' must be on the format [FULL NAME]:[DEFAULT PASSWORD]:[GROUP]
 # login will be [first name][last name], all in lowercase, password is DEFAULT PASSWORD or 123 if not set
 # the commands will be created on the file 'insert_users.sh', which needs to be run on a linux shell
 
-output = open('insert_users.sh','w')
+import sys
 
-output.write("#!/bin/bash\n");
+try:
+	filename = sys.argv[1]
+except:
+	sys.stderr.write( "[ERROR] input file not set" )
+	sys.exit(-1)
 
-with open('logins.dat','r') as logins_list:
+NAME_INDEX = 0
+PASSWORD_INDEX = 1
+GROUP_INDEX = 2
 
-	for line in logins_list:
-		data = line.split(':')
+try:
+	with open(filename,'r') as logins_list:
 
-		name = data[0].split(' ')
-		password = data[1]
+		# read and discard first header line
+		header = logins_list.readline()
 
-		login = ( name[0].strip() + name[len(name)-1].strip() ).lower()
+		# list of all students
+		all_students = []
 
-		if len( password.strip() ) == 0:
-			password = '123'
+		# dictionary for grouping students
+		all_groups = {}
 
-		print('Creating "' + login + '"...')
+		# processing file
+		line_nr = 1
+		for line in logins_list:
+			data = line.split(':')
 
-		output.write("sudo adduser --disabled-password --gecos '' " + login + "\n");
+			name = data[ NAME_INDEX ]
 
-		output.write("echo '"+login+":" + password + "' | sudo chpasswd\n");
+			sys.stdout.write("\nAdding '" + str(name) + "' to the list ...")
 
-	output.close()
+			try:
+				password = data[ PASSWORD_INDEX ]
+
+				if len( password.strip() ) == 0:
+					password = '123'
+					
+			except IndexError:
+				sys.stderr.write("[ERROR] Invalid index reading password value at line" + str(line_nr) )
+				sys.exit(-1)
+
+			try:
+				group = int( data[ GROUP_INDEX ] )
+
+			except IndexError:
+				sys.stderr.write( "\n[ERROR] Invalid index reading 'group' value at line" + str(line_nr) )
+				sys.exit(-1)
+			except ValueError:
+				sys.stderr.write( "\nNOTICE: No group defined for '" + str(name) + "'" )
+				continue
+
+			# adding student tuple and group
+			all_students.append(  ( name, password, group )  )
+
+			line_nr += 1
+except IOError:
+	sys.stderr.write( '\n[ERROR] cant open file' )
+	sys.exit(-1)
+
+####################################################
+# Creating script to insert users on the UI server #
+####################################################
+script_InsertUsers = open( 'create_users-GFX_server.sh' , 'w' )
+script_InsertUsers.write( "#!/bin/bash\n" )
+
+for student in all_students:
+
+	fullname = student[ NAME_INDEX ].split(' ')
+
+	if len(fullname) < 2:
+		sys.stderr.write("\n[NOTICE] Can't create login for '" + student[name] + "'" )
+	else:
+		login = ( fullname[ 0 ].strip() + fullname[ len(fullname)-1 ].strip() ).lower()
+
+		sys.stdout.write("\nCreating login '" + login + "'")
+
+		script_InsertUsers.write("sudo adduser --disabled-password --gecos '' " + login + "\n")
+		script_InsertUsers.write("echo '"+login+":" + password + "' | sudo chpasswd\n");
+
+script_InsertUsers.close()
+
+#########################################
+# Creating script to create student VMs #
+#########################################
+script_CreateVMs = open( 'create_VMs.sh' , 'w' )
+script_CreateVMs.write( "#!/bin/bash\n" )
+
+	
+script_CreateVMs.close()
+
+
+sys.stdout.write('\n')
