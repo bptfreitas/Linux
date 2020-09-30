@@ -21,7 +21,7 @@ try:
 	with open(filename,'r') as logins_list:
 
 		# read and discard first header line
-		header = logins_list.readline()
+		# header = logins_list.readline()
 
 		# list of all students
 		all_students = []
@@ -55,8 +55,8 @@ try:
 				sys.stderr.write( "\n[ERROR] Invalid index reading 'group' value at line" + str(line_nr) )
 				sys.exit(-1)
 			except ValueError:
-				sys.stderr.write( "\nNOTICE: No group defined for '" + str(name) + "'" )
-				continue
+				sys.stderr.write( "\n[NOTICE] No group defined for '" + str(name) + "'" )
+				group = -1
 
 			# adding student tuple and group
 			all_students.append(  ( name, password, group )  )
@@ -74,11 +74,11 @@ script_InsertUsers.write( "#!/bin/bash\n" )
 
 for student in all_students:
 
-	fullname = student[ NAME_INDEX ].split(' ')
+	fullname = student[ NAME_INDEX ].strip().split()
 	password = student[ PASSWORD_INDEX ]
 
 	if len(fullname) < 2:
-		sys.stderr.write("\n[NOTICE] Can't create login for '" + student[name] + "'" )
+		sys.stderr.write("\n[NOTICE] Can't create login for '" + student[ NAME_INDEX ] + "'" )
 	else:
 		login = ( fullname[ 0 ].strip() + fullname[ len(fullname)-1 ].strip() ).lower()
 
