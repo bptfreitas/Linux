@@ -226,21 +226,16 @@ open)
 close)
     program=${POSITIONAL[0]}
 
+    input_rule=${POSITIONAL[1]}
+    output_rule=${POSITIONAL[2]}
+
     case $program in
 
         # open selected sites
         sites)
-            for site in $(cat ${HOME}/.allowed-sites); do
-                for chain in INPUT OUTPUT; do
-                    while :; do
-                        rule=`sudo iptables -L ${chain} |\
-                            grep -no -m 1 "${site}" | head -1 |\
-                            cut -f1 -d':'`
-                        rule=$(( rule -1 ))
-                    [[ ${DEBUG} -eq 1 ]] && echo "DEBUG: close proxmox ${chain} ${rule}"
-                    [[ ${rule} -gt 0 ]] && sudo iptables -D ${chain} ${rule} || break
-                    done
-                done
+            for site in $(cat /root/blocked-sites); do
+                echo "Blocking ${site} ..."
+                sudo iptables -I OUTPUT ${output_rule} -d ${site} -j DROP
             done
             ;; #end: close sites
 
@@ -306,7 +301,7 @@ stop)
                 grep -no -m 1 '3478:3481|13.107.64.0|52.112.0.0|52.120.0.0' |\
                 cut -f1 -d':'`
             rule=$(( rule -1 ))        
-            [ ${rule} -gt 0 ] && sudo iptables -D ${chain} ${rule} || break
+            [[ ${rule} -gt 0 ]] && sudo iptables -D ${chain} ${rule} || break
         done
     done
 

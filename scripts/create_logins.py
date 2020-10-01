@@ -7,6 +7,13 @@
 
 import sys
 
+code_adduser = "\
+if [[ \"`egrep '{l}' /etc/passwd`\" == \"\" ]]; then\n\
+\tsudo adduser --disabled-password --gecos {l}\n\
+\techo '{l}:{p}' | sudo chpasswd\n\
+fi\
+\n\n"
+
 try:
 	filename = sys.argv[1]
 except:
@@ -56,7 +63,7 @@ try:
 				sys.exit(-1)
 			except ValueError:
 				sys.stderr.write( "\nNOTICE: No group defined for '" + str(name) + "'" )
-				continue
+				
 
 			# adding student tuple and group
 			all_students.append(  ( name, password, group )  )
@@ -74,18 +81,18 @@ script_InsertUsers.write( "#!/bin/bash\n" )
 
 for student in all_students:
 
-	fullname = student[ NAME_INDEX ].split(' ')
+	fullname = student[ NAME_INDEX ]
+	name_parts = fullname.split(' ')
 	password = student[ PASSWORD_INDEX ]
 
-	if len(fullname) < 2:
-		sys.stderr.write("\n[NOTICE] Can't create login for '" + student[name] + "'" )
+	if len(name_parts) < 2:
+		sys.stderr.write("\n[NOTICE] Can't create login for '" + fullname + "'" )
 	else:
-		login = ( fullname[ 0 ].strip() + fullname[ len(fullname)-1 ].strip() ).lower()
+		login = ( name_parts[ 0 ].strip() + name_parts[ -1 ].strip() ).lower()
 
-		sys.stdout.write("\nCreating login '" + login + "'")
+		sys.stdout.write( "\nCreating login '" + login + "'" )
 
-		script_InsertUsers.write( "sudo adduser --disabled-password --gecos '' " + login + "\n" )
-		script_InsertUsers.write( "echo '" + login + ":" + password + "' | sudo chpasswd\n" )
+		script_InsertUsers.write( code_adduser.format( l = login , p = password )  )
 
 script_InsertUsers.close()
 

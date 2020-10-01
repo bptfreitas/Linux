@@ -212,7 +212,7 @@ tmpfile="`mktemp`"
 
 echo "Exporting to ${tmpdir} ..."
 
-if [ ${SORT} -eq 1 ]; then
+if [[ ${SORT} -eq 1 ]]; then
 	tmpdir_sort="`mktemp -d`"
 	all_files_list="`mktemp`"
 
@@ -283,7 +283,7 @@ if [ ${COPY_FOLDERS} -eq 1 ]; then
 
 	for dir in $(find "${SRCDIR}" -maxdepth 1 -type d); do
 
-		if [ -d "${dir}/${FOLDER}" ]; then 
+		if [[ -d "${dir}/${FOLDER}" ]]; then 
 			echo ${dir}
 		fi
 

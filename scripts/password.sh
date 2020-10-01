@@ -3,7 +3,7 @@
 debug=1
 
 if [ "`env | grep "PASSWORD_FILE"`" == "" ]; then
-	echo "\$PASSWORD_FILE not set - Aborting"
+	echo "env var \$PASSWORD_FILE not set - Aborting"
 	exit
 fi
 

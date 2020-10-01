@@ -213,22 +213,11 @@ setup)
     sudo iptables -P FORWARD DROP
     sudo iptables -P OUTPUT ACCEPT
 
-    ################################################
-    # creating a service to make restarting simple #
-    ################################################
+    serviceunit=/etc/systemd/system/router.service  
 
-    echo "
-    #!/bin/bash
-
-    for site in \$(sudo cat /root/allowed-sites); do
-        echo \"Allowing: \${site}\"
-        sudo iptables -I FORWARD 2 -d \${site} --dport 80 -j ACCEPT
-    done
-
-    " | sudo tee /root/router_allowed-sites.sh
-    sudo chmod +x /root/router_allowed-sites.sh 
-
-    serviceunit=/etc/systemd/system/router.service    
+    #################################################
+    # creating a service to start router on startup #
+    #################################################
 
     # saving rules
     sudo iptables-save | sudo tee /root/router.rules
@@ -266,7 +255,7 @@ setup)
     sudo ifconfig ${LAN} down
     sudo ifconfig ${LAN} up
 
-    # allow forwarding of selected sites from LAN
+    # copying script to root folder
     sudo cp $0 /root/config-router.sh
     ;;
 

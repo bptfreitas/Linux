@@ -39,6 +39,8 @@ case $opt in
 				#sites open	
 				config-fw.sh open msteams -1 3
 				config-fw.sh open sites -1 3
+				config-fw.sh close sites -1 3
+
 
 				## allow only HTTPS outgoing traffic to pass through VPN 
 				## sudo iptables -I OUTPUT 1 -p tcp --dport 443 -j ACCEPT

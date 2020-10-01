@@ -71,6 +71,9 @@ myinstall_webserver()
 		echo "Backing up current configuration ... "
 		cp /etc/apache2/apache2.conf ${HOME}/.apache2-`date '+%Y-%m-%d_%H-%M-%S'`.conf
 
+		echo "Enabling security configurations..."
+		
+
 		echo "<Directory \"/srv/pub\">
 			Options Indexes FollowSymLinks
 			AllowOverride None
