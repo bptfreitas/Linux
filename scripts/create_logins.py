@@ -62,9 +62,9 @@ try:
 				sys.stderr.write( "\n[ERROR] Invalid index reading 'group' value at line" + str(line_nr) )
 				sys.exit(-1)
 			except ValueError:
-				sys.stderr.write( "\nNOTICE: No group defined for '" + str(name) + "'" )
+				group = -1
+				sys.stderr.write( "\n[NOTICE] No group defined for '" + str(name) + "'" )
 				
-
 			# adding student tuple and group
 			all_students.append(  ( name, password, group )  )
 
