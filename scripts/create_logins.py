@@ -28,7 +28,7 @@ try:
 	with open(filename,'r') as logins_list:
 
 		# read and discard first header line
-		header = logins_list.readline()
+		# header = logins_list.readline()
 
 		# list of all students
 		all_students = []

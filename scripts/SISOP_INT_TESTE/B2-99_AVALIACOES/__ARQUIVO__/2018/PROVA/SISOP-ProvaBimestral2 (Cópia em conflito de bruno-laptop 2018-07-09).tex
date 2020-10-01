@@ -1,0 +1,144 @@
+\documentclass[10pt,a4paper,oneside]{exam}
+
+\usepackage[provaresumida]{cefetex}
+
+\professor{Bruno Policarpo Toledo Freitas}
+\curso{Técnico em Informática Integrado ao Ensino Médio}
+\disciplina{Sistemas Operacionais}
+\nomedaprova{Prova Bimestral 2}
+
+\begin{document}
+	
+\maketitle
+
+\renewcommand{\lstlistingname}{Solução}
+
+\begin{questions}
+	
+\question[2] Diga o que os seguintes comandos UNIX significam:
+
+	\begin{parts}
+		\begin{minipage}{\textwidth}
+			\part chmod 777 arquivo.txt
+			\begin{solutionorlines}[1cm]
+			\end{solutionorlines}
+		\end{minipage}
+	
+		\begin{minipage}{\textwidth}
+			\part chown joao:bruno arquivo.txt
+			\begin{solutionorlines}[1cm]
+			\end{solutionorlines}
+		\end{minipage}
+	
+		\begin{minipage}{\textwidth}
+			\part kill -9 1234
+			\begin{solutionorlines}[1cm]
+			\end{solutionorlines}
+		\end{minipage}
+	
+		\begin{minipage}{\textwidth}
+			\part grep "bruno" arquivo.txt
+			\begin{solutionorlines}[1cm]
+			\end{solutionorlines}
+		\end{minipage}
+	
+		\begin{minipage}{\textwidth}
+			\part sudo su
+			\begin{solutionorlines}[1cm]
+			\end{solutionorlines}
+		\end{minipage}	
+		
+		\begin{minipage}{\textwidth}
+			\part ps -u bruno 
+			\begin{solutionorlines}[1cm]
+			\end{solutionorlines}
+		\end{minipage}
+	
+		\begin{minipage}{\textwidth}
+			\part cat arquivo1.txt arquivo2.txt $|$ sort $>$ arquivo3.txt
+			\begin{solutionorlines}[1cm]
+			\end{solutionorlines}
+		\end{minipage}	
+	
+	\end{parts}
+
+\question[2] Para cada expressão regular abaixo, dê duas strings de exemplo que elas capturam
+
+	\begin{parts}
+		
+		\begin{minipage}{\textwidth}
+			\part $[abc]*abc$
+			\begin{solutionorlines}[1cm]
+			\end{solutionorlines}
+		\end{minipage}
+	
+		\begin{minipage}{\textwidth}
+			\part $[d-z]+abc$
+			\begin{solutionorlines}[1cm]
+			\end{solutionorlines}
+		\end{minipage}
+	
+		\begin{minipage}{\textwidth}
+			\part $[a-z]*abc\{2,3\}$
+			\begin{solutionorlines}[1cm]
+			\end{solutionorlines}
+		\end{minipage}	
+	
+		\begin{minipage}{\textwidth}
+			\part $ \hat{} \  [A-Z0-9]+[a-z0-9]*\$$
+			\begin{solutionorlines}[1cm]
+			\end{solutionorlines}				
+		\end{minipage}
+	
+
+
+%		\part $\^[A-Za-z]+\.[A-Za-z0-9]$
+	\end{parts}
+
+
+\baselineskip=2\baselineskip
+\begin{minipage}{\textwidth}	
+\question[2] Quais são os 4 tipos de redirecionamento? O que eles fazem? Cite um exemplo de utilização para cada um deles.
+
+	\begin{solutionorlines}[3cm]
+	\end{solutionorlines}
+\end{minipage}
+
+
+
+\begin{minipage}{\textwidth}
+	\question[2] Explique, sucintamente, as seguintes pastas do sistema de arquivos UNIX:\\
+
+	\begin{parts}
+
+		\part /bin  \hrulefill
+		
+		\part /home \hrulefill
+
+		\part /dev \hrulefill
+
+		\part /usr \hrulefill
+
+		\part /lib \hrulefill			
+
+		\part /tmp \hrulefill
+				
+		\part /var \hrulefill
+				
+	\end{parts}
+\end{minipage}
+	
+
+\begin{minipage}{\textwidth}		
+	\question[2] Explique, sucintamente, o que o seguinte shell script faz:
+
+	\lstinputlisting[language=sh]{codigo1.sh}
+
+	\begin{solutionorlines}[3cm]
+	\end{solutionorlines}
+\end{minipage}
+
+\end{questions}
+
+
+\end{document}
