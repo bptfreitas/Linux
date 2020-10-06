@@ -1,7 +1,8 @@
-NOME:SENHA:GRUPO
-Ana Redes:abcd:1
-Bob Redes:4321:1
-Sonya Blade::2
-Johnny Cage::2
-Cassie Cage::
-Scorpion::
+NOME:SENHA:GRUPO:MACHINE_INDEX
+Ana Redes:abcd:1:10
+Bob Redes:4321:1:10
+Sonya Blade::2:
+Johnny Cage::2:
+Cassie Cage::2:
+Liu Kang:::88
+Liu Kang:::77

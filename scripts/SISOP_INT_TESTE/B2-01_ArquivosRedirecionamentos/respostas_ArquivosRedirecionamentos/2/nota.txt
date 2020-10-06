@@ -1,1 +1,0 @@
-Cada execuaçao do fortune ira gerar uma mensagem diferente
