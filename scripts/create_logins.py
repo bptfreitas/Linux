@@ -10,19 +10,34 @@ import sys
 code_adduser = "\
 if [[ \"`egrep '{l}' /etc/passwd`\" == \"\" ]]; then\n\
 \tsudo adduser --disabled-password --gecos {l}\n\
-\techo '{l}:{p}' | sudo chpasswd\n\
+\techo '{l}:{p}' | sudo chpasswd \n\
 fi\
 \n\n"
 
-code_adduser_proxmox = "\
+code_adduser_proxmox = "\n\
+echo \"Creating VM {vm_id} for user '{l}'\" >> ${{LOG}} \n\
 pvum useradd {l} --password {p}\n\
 qm clone 9004 {vm_id} \n\
-for i in `seq ${{total_nodes}}`; do \n\
-\tcurrent_node=$(( (current_node + 1) % total_nodes ))\n\
-\tqm migrate {vm_id} ${{nodes[$current_node]}} \n\
-\t[[ $? -eq 0 ]]; && break \n\
-done \n\
-pveum aclmod /vms/{vm_id} -user {l}@pve -role AlunoCefet \
+if [[ $? -eq 0 ]]; then \n\
+\tfor i in `seq ${{total_nodes}}`; do \n\
+\t\tcurrent_node=$(( (current_node + 1) % total_nodes ))\n\
+\t\techo \"Migrating VM {vm_id} to node ${{nodes[$current_node]}}\" \n\
+\t\tqm migrate {vm_id} ${{nodes[$current_node]}} \n\
+\t\tif [[ $? -eq 0 ]]; then \n\
+\t\t\techo \"Migration concluded. Changing permissions to VM\" >> ${{LOG}} \n\
+\t\t\tpveum aclmod /vms/{vm_id} -user {l}@pve -role AlunoCefet \n\
+\t\t\tbreak \n\
+\t\telse\n\
+\t\t\tif [[ $i -eq ${{total_nodes}} ]]; then \n\
+\t\t\t\techo \"Migration to all nodes failed\" >> ${{LOG}} \n\
+\t\t\telse \n\
+\t\t\t\techo \"Migration ${{i}}/${{total_nodes}} failed. Trying next node.\" >> ${{LOG}}\n\
+\t\t\tfi\n\
+\t\tfi\n\
+\tdone \n\
+else \n\
+\techo \"Error cloning VM 9004 to {vm_id}\" >> ${{LOG}}\n\
+fi\n\
 \n\n"
 
 try:
@@ -119,6 +134,9 @@ except IOError:
 ####################################################
 preamble = "#!/usr/bin/python3 \n\
 \n\
+LOG=addusers.log\n\
+> ${{LOG}} \n\
+\n\
 nodes[0]=proxmox \n\
 nodes[1]=proxmox2 \n\
 nodes[2]=proxmox3 \n\
@@ -129,12 +147,12 @@ nodes[6]=proxmox7 \n\
 nodes[7]=proxmox8 \n\
 \n\
 total_nodes=${#nodes[@]} \n\
+current_node=0 \n\
 \n\
 "
 
-script_InsertUsers = open( 'create_users-GFX_server.sh' , 'w' )
+script_InsertUsers = open( 'TEST-create_users.sh' , 'w' )
 script_InsertUsers.write( preamble )
-
 
 vm_counter = { }
 for student in all_students:
