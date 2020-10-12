@@ -76,7 +76,7 @@ function proxmox_adduser_with_cloned_VM(){
 				echo "`date +%c`: [ERROR] Migration to all PROXMOX_NODES failed" >> ${LOG_ADDUSER}
 				return -1
 			else 
-				echo "`date +%c`: [FAIL] Migration ${i}/${TOTAL_PROXMOX_NODES} failed. Trying next node." >> ${LOG_ADDUSER}
+				echo "`date +%c`: [FAIL] Migration ${i}/${total_proxmox_nodes} failed. Trying next node." >> ${LOG_ADDUSER}
 			fi
 		fi	
 	done
