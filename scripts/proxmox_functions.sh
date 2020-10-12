@@ -37,7 +37,7 @@ function proxmox_adduser_with_cloned_VM(){
 
 	echo "`date +%c`: Adding user '${USERNAME}' to proxmox"
 	
-	pvum useradd ${USERNAME} --password ${PASSWORD};
+	pveum useradd ${USERNAME}@pve --password ${PASSWORD};
 	if [[ $? -eq 0 ]]; then
 		echo -e "`date +%c`: User added. Cloning VM ${VM_TO_CLONE} to ${VM_ID} " >> ${LOG_ADDUSER}
 	else 
@@ -45,7 +45,7 @@ function proxmox_adduser_with_cloned_VM(){
 		return -1
 	fi
 
-	qm clone ${VM_TO_CLONE} ${VM_ID} 
+	qm clone ${VM_TO_CLONE} ${VM_ID} --full
 	if [[ $? -eq 0 ]]; then
 		echo "`date +%c`: VM created" >> ${LOG_ADDUSER}
 	else
@@ -61,7 +61,10 @@ function proxmox_adduser_with_cloned_VM(){
 		qm migrate ${VM_ID} ${PROXMOX_NODES[$NEXT_NODE_TO_MIGRATE]} 
 		if [[ $? -eq 0 ]]; then 
 			echo "`date +%c`: Migration concluded. Changing permissions to VM" >> ${LOG_ADDUSER} 
-			pvum aclmod /vms/${VM_ID} -user ${USERNAME}@pve -role AlunoCefet
+			pveum aclmod /vms/${VM_ID} -user ${USERNAME}@pve -role AlunoCefet
+
+			qm stop ${VM_ID}
+			qm start ${VM_ID}
 			export NEXT_NODE_TO_MIGRATE
 			break 
 		else
