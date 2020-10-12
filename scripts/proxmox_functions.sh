@@ -45,7 +45,7 @@ function proxmox_adduser_with_cloned_VM(){
 		return -1
 	fi
 
-	qm clone ${VM_TO_CLONE} ${VM_ID} # --full
+	qm clone ${VM_TO_CLONE} ${VM_ID} --full
 	if [[ $? -eq 0 ]]; then
 		echo "`date +%c`: VM created. Modifying permissions" >> ${LOG_ADDUSER}
 	else
