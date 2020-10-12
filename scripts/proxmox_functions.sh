@@ -54,14 +54,16 @@ function proxmox_adduser_with_cloned_VM(){
 	fi
 
 	for i in `seq ${total_proxmox_nodes}`; do
+		
+		qm stop ${VM_ID}
+		qm start ${VM_ID}
+
 		NEXT_NODE_TO_MIGRATE=$(( (NEXT_NODE_TO_MIGRATE + 1) % total_proxmox_nodes ))
 
 		echo "`date +%c`: Migrating VM ${VM_ID} to node ${PROXMOX_NODES[$NEXT_NODE_TO_MIGRATE]}" >> ${LOG_ADDUSER}
 		
 		qm migrate ${VM_ID} ${PROXMOX_NODES[$NEXT_NODE_TO_MIGRATE]} 
 		if [[ $? -eq 0 ]]; then 
-			qm stop ${VM_ID}
-			qm start ${VM_ID}
 
 			echo "`date +%c`: Migration concluded. Changing permissions to VM" >> ${LOG_ADDUSER} 
 			pveum aclmod /vms/${VM_ID} -user ${USERNAME}@pve -role AlunoCefet
