@@ -45,17 +45,23 @@ function proxmox_adduser_with_cloned_VM(){
 		return -1
 	fi
 
-	qm clone ${VM_TO_CLONE} ${VM_ID} --full
+	qm clone ${VM_TO_CLONE} ${VM_ID} # --full
 	if [[ $? -eq 0 ]]; then
-		echo "`date +%c`: VM created" >> ${LOG_ADDUSER}
+		echo "`date +%c`: VM created. Modifying permissions" >> ${LOG_ADDUSER}
 	else
 		echo "`date +%c`: [ERROR] Failed to clone VM" >> ${LOG_ADDUSER}
 		return -1
 	fi
 
+	pveum aclmod /vms/${VM_ID} -user ${USERNAME}@pve -role AlunoCefet
+	if [[ $? -eq 0 ]]; then 
+		echo "`date +%c`: Permissions changed" >> ${LOG_ADDUSER}
+	else
+		echo "`date +%c`: [ERROR] Failed to change permissions" >> ${LOG_ADDUSER}
+		return -1	
+	fi
+
 	for i in `seq ${total_proxmox_nodes}`; do
-		
-		qm stop ${VM_ID}
 		
 		NEXT_NODE_TO_MIGRATE=$(( (NEXT_NODE_TO_MIGRATE + 1) % total_proxmox_nodes ))
 
@@ -64,9 +70,9 @@ function proxmox_adduser_with_cloned_VM(){
 		qm migrate ${VM_ID} ${PROXMOX_NODES[$NEXT_NODE_TO_MIGRATE]} 		
 		if [[ $? -eq 0 ]]; then 
 
-			echo "`date +%c`: Migration concluded. Changing permissions to VM" >> ${LOG_ADDUSER} 
-			pveum aclmod /vms/${VM_ID} -user ${USERNAME}@pve -role AlunoCefet
-
+			echo "`date +%c`: Migration concluded. Restarting VM. " >> ${LOG_ADDUSER} 
+			
+			qm stop ${VM_ID}
 			qm start ${VM_ID}
 
 			export NEXT_NODE_TO_MIGRATE
