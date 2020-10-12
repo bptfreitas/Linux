@@ -1,5 +1,7 @@
 #!/bin/bash
 
+TEST=$1
+
 LOG_ADDUSER=proxmox_addusers.log
 > ${LOG_ADDUSER}
 
@@ -16,43 +18,79 @@ export PROXMOX_NODES
 export NEXT_NODE_TO_MIGRATE=0 
 export VM_TO_CLONE=9004
 
-function proxmox_adduser(){
+function proxmox_adduser_with_cloned_VM(){
 	USERNAME=$1
 	PASSWORD=$2
 	VM_ID=$3
 
 	total_proxmox_nodes=${#PROXMOX_NODES[@]}
 
-	[[ $# -ne 3 ]] &&\ 
-		{ echo "[ERROR] Invalid number of arguments: $#"; return -1 } 
+	if [[ $# -ne 3 ]]; then
+		echo "`date +%c`: [ERROR] Invalid number of arguments: $#";
+		return
+	fi 
 
-	[[ ${total_proxmox_nodes} -eq 0 ]] &&\
-		{ echo "[ERROR] proxmox nodes not defined "; return -1; }
-
-	echo "Creating VM ${VM_ID} for user '${USERNAME}'" >> ${LOG_ADDUSER} 
-	pvum useradd ${USERNAME} --password ${PASSWORD}
-	qm clone ${VM_TO_CLONE} ${VM_ID} 
-	if [[ $? -eq 0 ]]; then 
-		for i in `seq ${TOTAL_PROXMOX_NODES}`; do 
-			NEXT_NODE_TO_MIGRATE=$(( (NEXT_NODE_TO_MIGRATE + 1) % total_proxmox_nodes ))
-			echo "Migrating VM ${VM_ID} to node ${PROXMOX_NODES[$NEXT_NODE_TO_MIGRATE]}" 
-
-			qm migrate ${VM_ID} ${PROXMOX_NODES[$NEXT_NODE_TO_MIGRATE]} 
-			if [[ $? -eq 0 ]]; then 
-				echo "Migration concluded. Changing permissions to VM" >> ${LOG_ADDUSER} 
-				pveum aclmod /vms/${VM_ID} -user ${USERNAME}@pve -role AlunoCefet
-                export NEXT_NODE_TO_MIGRATE
-				break 
-			else
-				if [[ $i -eq ${TOTAL_PROXMOX_NODES} ]]; then 
-					echo "Migration to all PROXMOX_NODES failed" >> ${LOG_ADDUSER} 
-				else 
-					echo "Migration ${i}/${TOTAL_PROXMOX_NODES} failed. Trying next node." >> ${LOG_ADDUSER}
-				fi
-			fi
-		done 
-	else 
-		echo "Error cloning VM ${VM_TO_CLONE} to ${VM_ID}" >> ${LOG_ADDUSER}
+	if [[ ${total_proxmox_nodes} -eq 0 ]]; then 
+		echo "`date +%c`: [ERROR] proxmox nodes not defined ";
+		return -1
 	fi
+
+	echo "`date +%c`: Adding user '${USERNAME}' to proxmox"
+	
+	pvum useradd ${USERNAME} --password ${PASSWORD};
+	if [[ $? -eq 0 ]]; then
+		echo -e "`date +%c`: User added. Cloning VM ${VM_TO_CLONE} to ${VM_ID} " >> ${LOG_ADDUSER}
+	else 
+		echo "`date +%c`: [ERROR] Failed to add user" >> ${LOG_ADDUSER}
+		return -1
+	fi
+
+	qm clone ${VM_TO_CLONE} ${VM_ID} 
+	if [[ $? -eq 0 ]]; then
+		echo "`date +%c`: VM created" >> ${LOG_ADDUSER}
+	else
+		echo "`date +%c`: [ERROR] Failed to clone VM" >> ${LOG_ADDUSER}
+		return -1
+	fi
+
+	for i in `seq ${total_proxmox_nodes}`; do
+		NEXT_NODE_TO_MIGRATE=$(( (NEXT_NODE_TO_MIGRATE + 1) % total_proxmox_nodes ))
+
+		echo "`date +%c`: Migrating VM ${VM_ID} to node ${PROXMOX_NODES[$NEXT_NODE_TO_MIGRATE]}" >> ${LOG_ADDUSER}
+		
+		qm migrate ${VM_ID} ${PROXMOX_NODES[$NEXT_NODE_TO_MIGRATE]} 
+		if [[ $? -eq 0 ]]; then 
+			echo "`date +%c`: Migration concluded. Changing permissions to VM" >> ${LOG_ADDUSER} 
+			pvum aclmod /vms/${VM_ID} -user ${USERNAME}@pve -role AlunoCefet
+			export NEXT_NODE_TO_MIGRATE
+			break 
+		else
+			if [[ $i -eq ${TOTAL_PROXMOX_NODES} ]]; then 
+				echo "`date +%c`: [ERROR] Migration to all PROXMOX_NODES failed" >> ${LOG_ADDUSER}
+				return -1
+			else 
+				echo "`date +%c`: [FAIL] Migration ${i}/${TOTAL_PROXMOX_NODES} failed. Trying next node." >> ${LOG_ADDUSER}
+			fi
+		fi	
+	done
+
+	cat ${LOG_ADDUSER}
 }
 
+if [[ $TEST -eq 1 ]]; then
+
+	shopt -s expand_aliases
+	alias pvum="/bin/true"
+	alias qm="/bin/true"
+
+	TEST=1
+
+	echo "TEST $TEST: no parameter check "; TEST=$((TEST + 1));
+	proxmox_adduser_with_cloned_VM
+
+	echo -e "\nTEST $TEST: parameter check"; TEST=$((TEST + 1));
+	proxmox_adduser_with_cloned_VM "dummu user" "dummy password"
+
+	echo -e "\nTEST $TEST: sucessfull run"; TEST=$((TEST + 1));
+	proxmox_adduser_with_cloned_VM "test1" "abcd" "1111"
+fi
