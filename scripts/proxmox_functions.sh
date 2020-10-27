@@ -72,8 +72,8 @@ function proxmox_adduser_with_cloned_VM(){
 
 			echo "`date +%c`: Migration concluded. Restarting VM. " >> ${LOG_ADDUSER} 
 			
-			qm stop ${VM_ID}
-			qm start ${VM_ID}
+			# qm stop ${VM_ID}
+			# qm start ${VM_ID}
 
 			export NEXT_NODE_TO_MIGRATE
 			break 
