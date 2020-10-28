@@ -18,47 +18,11 @@ export PROXMOX_NODES
 export NEXT_NODE_TO_MIGRATE=0 
 export VM_TO_CLONE=9004
 
-<<<<<<< HEAD
-function proxmox_adduser_with_VM(){
-=======
 function proxmox_adduser_with_cloned_VM(){
->>>>>>> d5f3cabc5d36b917892f6da3fee1365c0d422712
 	USERNAME=$1
 	PASSWORD=$2
 	VM_ID=$3
 
-<<<<<<< HEAD
-	echo "Adding user '${USERNAME}' to PVE " >> ${LOG_ADDUSER} 
-	pvum useradd ${USERNAME} --password ${PASSWORD}
-
-	echo "Creating VM ${VM_ID} for user '${USERNAME}'" >> ${LOG_ADDUSER} 
-	qm clone ${VM_TO_CLONE} ${VM_ID}
-
-	if [[ $? -eq 0 ]]; then 
-
-		for i in `seq ${TOTAL_PROXMOX_NODES}`; do 
-			NODE_TO_MIGRATE=$(( (NODE_TO_MIGRATE + 1) % TOTAL_PROXMOX_NODES ))
-			echo "Migrating VM ${VM_ID} to node ${PROXMOX_NODES[$NODE_TO_MIGRATE]}" 
-
-			qm migrate ${VM_ID} ${PROXMOX_NODES[$NODE_TO_MIGRATE]} 
-			if [[ $? -eq 0 ]]; then 
-
-				echo "Migration concluded. Changing permissions to VM" >> ${LOG_ADDUSER} 
-				pveum aclmod /vms/${VM_ID} -user ${USERNAME}@pve -role AlunoCefet
-
-                export NODE_TO_MIGRATE
-				break 
-
-			else
-				if [[ $i -eq ${TOTAL_PROXMOX_NODES} ]]; then 
-					echo "Migration to all PROXMOX_NODES failed" >> ${LOG_ADDUSER} 
-				else 
-					echo "Migration ${i}/${TOTAL_PROXMOX_NODES} failed. Trying next node." >> ${LOG_ADDUSER}
-				fi
-			fi
-			
-		done 
-=======
 	total_proxmox_nodes=${#PROXMOX_NODES[@]}
 
 	if [[ $# -ne 3 ]]; then
@@ -76,7 +40,6 @@ function proxmox_adduser_with_cloned_VM(){
 	pveum useradd ${USERNAME}@pve --password ${PASSWORD};
 	if [[ $? -eq 0 ]]; then
 		echo -e "`date +%c`: User added. Cloning VM ${VM_TO_CLONE} to ${VM_ID} " >> ${LOG_ADDUSER}
->>>>>>> d5f3cabc5d36b917892f6da3fee1365c0d422712
 	else 
 		echo "`date +%c`: [ERROR] Failed to add user" >> ${LOG_ADDUSER}
 		return -1
