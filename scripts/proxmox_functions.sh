@@ -19,9 +19,15 @@ export NEXT_NODE_TO_MIGRATE=0
 export VM_TO_CLONE=9004
 
 function proxmox_adduser_with_cloned_VM(){
+<<<<<<< HEAD
 	USERNAME=$1
 	PASSWORD=$2
 	VM_ID=$3
+=======
+	local USERNAME=$1
+	local PASSWORD=$2
+	local VM_ID=$3
+>>>>>>> c4423bae10a141dded1df7d4329ab142d83374c0
 
 	total_proxmox_nodes=${#PROXMOX_NODES[@]}
 
@@ -72,8 +78,8 @@ function proxmox_adduser_with_cloned_VM(){
 
 			echo "`date +%c`: Migration concluded. Restarting VM. " >> ${LOG_ADDUSER} 
 			
-			qm stop ${VM_ID}
-			qm start ${VM_ID}
+			# qm stop ${VM_ID}
+			# qm start ${VM_ID}
 
 			export NEXT_NODE_TO_MIGRATE
 			break 
