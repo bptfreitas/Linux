@@ -3,33 +3,17 @@
 TEST=$1
 
 LOG_ADDUSER=proxmox_addusers.log
-> ${LOG_ADDUSER}
+if [[ $TEST -eq 1 ]]; then 
+	> ${LOG_ADDUSER}
+fi
 
-PROXMOX_NODES[0]=proxmox 
-PROXMOX_NODES[1]=proxmox2 
-PROXMOX_NODES[2]=proxmox3 
-PROXMOX_NODES[3]=proxmox4 
-PROXMOX_NODES[4]=proxmox5 
-PROXMOX_NODES[5]=proxmox6 
-PROXMOX_NODES[6]=proxmox7 
-PROXMOX_NODES[7]=proxmox8 
-
-export PROXMOX_NODES
-export NEXT_NODE_TO_MIGRATE=0 
 export VM_TO_CLONE=9004
 
 function proxmox_adduser_with_cloned_VM(){
-<<<<<<< HEAD
-	USERNAME=$1
-	PASSWORD=$2
-	VM_ID=$3
-=======
 	local USERNAME=$1
 	local PASSWORD=$2
 	local VM_ID=$3
->>>>>>> c4423bae10a141dded1df7d4329ab142d83374c0
-
-	total_proxmox_nodes=${#PROXMOX_NODES[@]}
+	local NODE_TO_MIGRATE=$4
 
 	if [[ $# -ne 3 ]]; then
 		echo "`date +%c`: [ERROR] Invalid number of arguments: $#";
@@ -67,33 +51,18 @@ function proxmox_adduser_with_cloned_VM(){
 		return -1	
 	fi
 
-	for i in `seq ${total_proxmox_nodes}`; do
+	if [[ "${NODE_TO_MIGRATE}" != "" ]]; then
+		echo "`date +%c`: Migrating ${VM_ID} to ${NODE_TO_MIGRATE}" >> ${LOG_ADDUSER} 
 		
-		NEXT_NODE_TO_MIGRATE=$(( (NEXT_NODE_TO_MIGRATE + 1) % total_proxmox_nodes ))
-
-		echo "`date +%c`: Migrating VM ${VM_ID} to node ${PROXMOX_NODES[$NEXT_NODE_TO_MIGRATE]}" >> ${LOG_ADDUSER}
-		
-		qm migrate ${VM_ID} ${PROXMOX_NODES[$NEXT_NODE_TO_MIGRATE]} 		
+		qm migrate ${VM_ID} ${NODE_TO_MIGRATE}
 		if [[ $? -eq 0 ]]; then 
-
-			echo "`date +%c`: Migration concluded. Restarting VM. " >> ${LOG_ADDUSER} 
-			
-			# qm stop ${VM_ID}
-			# qm start ${VM_ID}
-
-			export NEXT_NODE_TO_MIGRATE
-			break 
+			echo "`date +%c`: Migration concluded" >> ${LOG_ADDUSER} 
 		else
-			if [[ $i -eq ${TOTAL_PROXMOX_NODES} ]]; then 
-				echo "`date +%c`: [ERROR] Migration to all PROXMOX_NODES failed" >> ${LOG_ADDUSER}
-				return -1
-			else 
-				echo "`date +%c`: [FAIL] Migration ${i}/${total_proxmox_nodes} failed. Trying next node." >> ${LOG_ADDUSER}
-			fi
+			echo "`date +%c`: [ERROR] couldn't migrate" >> ${LOG_ADDUSER} 
 		fi	
-	done
+	fi
 
-	cat ${LOG_ADDUSER}
+	tail -n 5 ${LOG_ADDUSER}
 }
 
 if [[ $TEST -eq 1 ]]; then
