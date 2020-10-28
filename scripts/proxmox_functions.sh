@@ -15,14 +15,9 @@ function proxmox_adduser_with_cloned_VM(){
 	local VM_ID=$3
 	local NODE_TO_MIGRATE=$4
 
-	if [[ $# -ne 3 ]]; then
+	if [[ $# -ne 4 ]]; then
 		echo "`date +%c`: [ERROR] Invalid number of arguments: $#";
 		return
-	fi 
-
-	if [[ ${total_proxmox_nodes} -eq 0 ]]; then 
-		echo "`date +%c`: [ERROR] proxmox nodes not defined ";
-		return -1
 	fi
 
 	echo "`date +%c`: Adding user '${USERNAME}' to proxmox"
