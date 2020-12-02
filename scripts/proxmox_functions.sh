@@ -2,7 +2,7 @@
 
 TEST=$1
 
-if [[ $TEST -eq 1 ]]; then
+if [[ $TEST -gt 0 ]]; then
 	export PROXMOX_FUNCTIONS_LOG="/tmp/proxmox_functions.log"
 	export PROXMOX_FUNCTIONS_LOG_CMD="tee -a ${PROXMOX_FUNCTIONS_LOG}"
 	> $PROXMOX_FUNCTIONS_LOG
@@ -146,12 +146,15 @@ function proxmox_adduser_with_cloned_VM(){
 
 function proxmox_add_cloned_VM_to_users(){
 
-	echo "`date +%c`: $0" | ${PROXMOX_FUNCTIONS_LOG_CMD}	
+	echo "`date +%c`: ${FUNCNAME[0]} $*" | ${PROXMOX_FUNCTIONS_LOG_CMD}
+
+	TEMP_LOG=`mktemp`
 
 	# parameter checking
 
 	if [[ $# -lt 4 ]]; then
-		echo "`date +%c`: [ERROR] Invalid number of arguments: $# - must be at least 2" | ${PROXMOX_FUNCTIONS_LOG_CMD}
+		echo "`date +%c`: [ERROR] Invalid number of arguments: $# - must be at least 2" >> ${TEMP_LOG}
+		cat ${TEMP_LOG} | ${PROXMOX_FUNCTIONS_LOG_CMD}
 		return
 	fi
 
@@ -160,10 +163,10 @@ function proxmox_add_cloned_VM_to_users(){
 	########################
 	local VM_TO_CLONE=$1
 	shift
-	local VM_ID=$2
+	local VM_ID=$1
 	shift
 	# if this parameter equals to 'none', don't migrate cloned VM
-	local NODE_TO_MIGRATE=$3
+	local NODE_TO_MIGRATE=$1
 	shift
 	local USERS=$*
 
@@ -174,38 +177,41 @@ function proxmox_add_cloned_VM_to_users(){
 	# cloning VM
 	qm clone ${VM_TO_CLONE} ${VM_ID} --full
 	if [[ $? -eq 0 ]]; then
-		echo "`date +%c`: VM created. Modifying permissions" | ${PROXMOX_FUNCTIONS_LOG_CMD}
+		echo "`date +%c`: VM ${VM_ID} cloned from ${VM_TO_CLONE}. Modifying permissions" >> ${TEMP_LOG}
 	else
-		echo "`date +%c`: [ERROR] Failed to clone VM" | ${PROXMOX_FUNCTIONS_LOG_CMD}
-		return -1
+		echo "`date +%c`: [ERROR] Failed to clone VM ${VM_TO_CLONE}" >> ${TEMP_LOG} 
+		cat ${TEMP_LOG} | ${PROXMOX_FUNCTIONS_LOG_CMD}
+		return 
 	fi	
 
 	# adding cloned VMs to users
-	echo "`date +%c`: VM to add: $VM_ID" | ${PROXMOX_FUNCTIONS_LOG_CMD}
+	echo "`date +%c`: Adding ${VM_ID} to selected users" >> ${TEMP_LOG}
 
 	for user in $USERS; do
 		pveum aclmod /vms/${VM_ID} -user ${user}@pve -role AlunoCefet
 		if [[ $? -eq 0 ]]; then 
-			echo "`date +%c`: Added VM '${VM_ID}' to '$user'" | ${PROXMOX_FUNCTIONS_LOG_CMD}
+			echo "`date +%c`: Added VM '${VM_ID}' to '$user'" >> ${TEMP_LOG}
 		else
-			echo "`date +%c`: [ERROR] Failed to add VM '${VM_ID}' to '$user'" | ${PROXMOX_FUNCTIONS_LOG_CMD}
+			echo "`date +%c`: [ERROR] Failed to add VM '${VM_ID}' to '$user'" >> ${TEMP_LOG}		
 		fi		
 	done
 
 	# if NODE_TO_MIGRATE is different than 'none', migrate it to specified node
 	if [[ "${NODE_TO_MIGRATE}" != "none" ]]; then
-		echo "`date +%c`: Migrating VM '${VM_ID}' to ${NODE_TO_MIGRATE}" | ${PROXMOX_FUNCTIONS_LOG_CMD} 
+		echo "`date +%c`: Migrating VM '${VM_ID}' to ${NODE_TO_MIGRATE}" >> ${TEMP_LOG}
 		
 		qm migrate ${VM_ID} ${NODE_TO_MIGRATE}
 		if [[ $? -eq 0 ]]; then 
-			echo "`date +%c`: Migration concluded" | ${PROXMOX_FUNCTIONS_LOG_CMD} 
+			echo "`date +%c`: Migration concluded" >> ${TEMP_LOG} 
 		else
-			echo "`date +%c`: [ERROR] couldn't migrate" | ${PROXMOX_FUNCTIONS_LOG_CMD} 
-		fi	
+			echo "`date +%c`: [ERROR] couldn't migrate '${VM_ID}' to '${NODE_TO_MIGRATE}'" >> ${TEMP_LOG}
+			cat ${TEMP_LOG} | ${PROXMOX_FUNCTIONS_LOG_CMD}
+			return
+		fi
 	fi
 
-	tail -n  ${PROXMOX_FUNCTIONS_LOG}
-
+	cat ${TEMP_LOG} | ${PROXMOX_FUNCTIONS_LOG_CMD}
+	
 	return;
 }
 
@@ -225,4 +231,33 @@ if [[ $TEST -eq 1 ]]; then
 
 	echo -e "\nTEST $TEST: sucessfull run"; TEST=$((TEST + 1));
 	proxmox_adduser_with_cloned_VM "test1" "abcd" "1111"
+fi
+
+if [[ $TEST -eq 2 ]]; then
+
+	shopt -s expand_aliases
+	alias pvum="/bin/true"
+	alias qm="/bin/true"
+
+	TEST=1
+
+	echo "***Testing 'proxmox_add_cloned_VM_to_users'***"
+
+	echo "TEST $TEST: no parameter check "; TEST=$((TEST + 1));
+	proxmox_add_cloned_VM_to_users 
+
+	echo -e "\nTEST $TEST: no users set"; TEST=$((TEST + 1));
+	proxmox_add_cloned_VM_to_users "1234" "5678" "none"
+
+	echo -e "\nTEST $TEST: single user/no migration"; TEST=$((TEST + 1));
+	proxmox_add_cloned_VM_to_users "1234" "5678" "none" "joaozinho"
+
+	echo -e "\nTEST $TEST: single user/with migration"; TEST=$((TEST + 1));
+	proxmox_add_cloned_VM_to_users "1234" "5678" "dummy_node" "joaozinho"	
+
+	echo -e "\nTEST $TEST: multiple users/no migration"; TEST=$((TEST + 1));
+	proxmox_add_cloned_VM_to_users "1234" "5678" "none" "joaozinho" "mariazinha"
+
+	echo -e "\nTEST $TEST: multiple users/with migration"; TEST=$((TEST + 1));
+	proxmox_add_cloned_VM_to_users "1234" "5678" "dummy_node" "joaozinho" "mariazinha"
 fi
