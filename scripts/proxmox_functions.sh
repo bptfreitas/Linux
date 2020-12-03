@@ -120,7 +120,7 @@ function proxmox_adduser_with_cloned_VM(){
 	fi
 
 	pveum aclmod /vms/${VM_ID} -user ${USERNAME}@pve -role AlunoCefet
-	pveum aclmod /storage/local -user ${USERNAME}@pve -role AlunoCefet
+	pveum aclmod /storage/distros -user ${USERNAME}@pve -role AlunoCefet
 	if [[ $? -eq 0 ]]; then 
 		echo "`date +%c`: Permissions changed" >> ${TEMP_LOG}
 	else
