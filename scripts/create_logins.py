@@ -51,7 +51,7 @@ except:
 # column indexes
 NAME_INDEX = 0
 PASSWORD_INDEX = 1
-GROUP_INDEX = 2
+VM_INDEX = 2
 VM_PREFIX_INDEX = 3
 
 try:

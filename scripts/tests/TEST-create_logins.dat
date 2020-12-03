@@ -2,7 +2,10 @@ NOME:SENHA:GRUPO:MACHINE_INDEX
 Ana Redes:abcd:1:10
 Bob Redes:4321:1:10
 Sonya Blade::2:
-Johnny Cage::2:
+Johnny Cage:passwd:2:
 Cassie Cage::2:
 Liu Kang:::88
-Liu Kang:::77
+Liu Kang:!@$#::77
+Kung Lao:ABCD::88
+Shao Kang::3:22
+Shang Tsung::3:22
