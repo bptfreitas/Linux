@@ -23,11 +23,11 @@ function proxmox_adduser_with_cloned_VM(){
 	local PASSWORD=$2
 	local VM_ID=$3
 
-	total_proxmox_nodes=${#PROXMOX_NODES[@]}
+	local total_proxmox_nodes=${#PROXMOX_NODES[@]}
 
 	if [[ $# -ne 3 ]]; then
 		echo "`date +%c`: [ERROR] Invalid number of arguments: $#";
-		return
+		return -1
 	fi 
 
 	if [[ ${total_proxmox_nodes} -eq 0 ]]; then 
@@ -93,7 +93,7 @@ function proxmox_adduser_with_cloned_VM(){
 if [[ $TEST -eq 1 ]]; then
 
 	shopt -s expand_aliases
-	alias pvum="/bin/true"
+	alias pveum="/bin/true"
 	alias qm="/bin/true"
 
 	TEST=1
