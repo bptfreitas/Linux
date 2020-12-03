@@ -81,7 +81,7 @@ function proxmox_add_cloned_VM(){
 
 function proxmox_adduser_with_cloned_VM(){
 
-	TEMP_LOG=`mktemp`
+	TEMP_LOG=/tmp/proxmox_functions.log
 
 	echo "`date +%c`: $0" >> ${TEMP_LOG}
 
@@ -139,7 +139,7 @@ function proxmox_adduser_with_cloned_VM(){
 		fi	
 	fi
 
-	cat ${TEMP_LOG} | ${PROXMOX_FUNCTIONS_LOG_CMD}
+	cat ${TEMP_LOG}
 }
 
 function proxmox_add_cloned_VM_to_users(){
