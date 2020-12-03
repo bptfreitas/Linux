@@ -81,18 +81,15 @@ function proxmox_add_cloned_VM(){
 
 function proxmox_adduser_with_cloned_VM(){
 
-	echo "`date +%c`: $0" | ${PROXMOX_FUNCTIONS_LOG_CMD}
+	TEMP_LOG=`mktemp`
+
+	echo "`date +%c`: $0" >> ${TEMP_LOG}
 
 	# error checking 
 
-	if [[ $# -ne 3 ]]; then
-		echo "`date +%c`: [ERROR] Invalid number of arguments: $#";
+	if [[ $# -lt 3 ]]; then
+		echo "`date +%c`: [ERROR] Invalid number of arguments: $#" >> ${TEMP_LOG}
 		return
-	fi 
-
-	if [[ ${total_proxmox_nodes} -eq 0 ]]; then 
-		echo "`date +%c`: [ERROR] proxmox nodes not defined ";
-		return -1
 	fi
 
 	# availing parameters
@@ -108,40 +105,41 @@ function proxmox_adduser_with_cloned_VM(){
 	
 	pveum useradd ${USERNAME}@pve --password ${PASSWORD};
 	if [[ $? -eq 0 ]]; then
-		echo -e "`date +%c`: User added. Cloning VM ${VM_TO_CLONE} to ${VM_ID} " | ${PROXMOX_FUNCTIONS_LOG_CMD}
+		echo -e "`date +%c`: User added. Cloning VM ${VM_TO_CLONE} to ${VM_ID} " >> ${TEMP_LOG}
 	else 
-		echo "`date +%c`: [ERROR] Failed to add user" | ${PROXMOX_FUNCTIONS_LOG_CMD}
+		echo "`date +%c`: [ERROR] Failed to add user" >> ${TEMP_LOG}
 		return -1
 	fi
 
 	qm clone ${VM_TO_CLONE} ${VM_ID} --full
 	if [[ $? -eq 0 ]]; then
-		echo "`date +%c`: VM created. Modifying permissions" | ${PROXMOX_FUNCTIONS_LOG_CMD}
+		echo "`date +%c`: VM created. Modifying permissions" >> ${TEMP_LOG}
 	else
-		echo "`date +%c`: [ERROR] Failed to clone VM" | ${PROXMOX_FUNCTIONS_LOG_CMD}
+		echo "`date +%c`: [ERROR] Failed to clone VM" >> ${TEMP_LOG}
 		return -1
 	fi
 
 	pveum aclmod /vms/${VM_ID} -user ${USERNAME}@pve -role AlunoCefet
+	pveum aclmod /storage/local -user ${USERNAME}@pve -role AlunoCefet
 	if [[ $? -eq 0 ]]; then 
-		echo "`date +%c`: Permissions changed" | ${PROXMOX_FUNCTIONS_LOG_CMD}
+		echo "`date +%c`: Permissions changed" >> ${TEMP_LOG}
 	else
-		echo "`date +%c`: [ERROR] Failed to change permissions" | ${PROXMOX_FUNCTIONS_LOG_CMD}
+		echo "`date +%c`: [ERROR] Failed to change permissions" >> ${TEMP_LOG}
 		return -1	
 	fi
 
 	if [[ "${NODE_TO_MIGRATE}" != "" ]]; then
-		echo "`date +%c`: Migrating ${VM_ID} to ${NODE_TO_MIGRATE}" | ${PROXMOX_FUNCTIONS_LOG_CMD} 
+		echo "`date +%c`: Migrating ${VM_ID} to ${NODE_TO_MIGRATE}" >> ${TEMP_LOG} 
 		
 		qm migrate ${VM_ID} ${NODE_TO_MIGRATE}
 		if [[ $? -eq 0 ]]; then 
-			echo "`date +%c`: Migration concluded" | ${PROXMOX_FUNCTIONS_LOG_CMD} 
+			echo "`date +%c`: Migration concluded" >> ${TEMP_LOG} 
 		else
-			echo "`date +%c`: [ERROR] couldn't migrate" | ${PROXMOX_FUNCTIONS_LOG_CMD} 
+			echo "`date +%c`: [ERROR] couldn't migrate" >> ${TEMP_LOG} 
 		fi	
 	fi
 
-	tail -n  ${PROXMOX_FUNCTIONS_LOG}
+	cat ${TEMP_LOG} | ${PROXMOX_FUNCTIONS_LOG_CMD}
 }
 
 function proxmox_add_cloned_VM_to_users(){
@@ -218,7 +216,7 @@ function proxmox_add_cloned_VM_to_users(){
 if [[ $TEST -eq 1 ]]; then
 
 	shopt -s expand_aliases
-	alias pvum="/bin/true"
+	alias pveum="/bin/true"
 	alias qm="/bin/true"
 
 	TEST=1
@@ -226,11 +224,17 @@ if [[ $TEST -eq 1 ]]; then
 	echo "TEST $TEST: no parameter check "; TEST=$((TEST + 1));
 	proxmox_adduser_with_cloned_VM
 
-	echo -e "\nTEST $TEST: parameter check"; TEST=$((TEST + 1));
-	proxmox_adduser_with_cloned_VM "dummu user" "dummy password"
+	echo -e "\nTEST $TEST: 2 parameter check"; TEST=$((TEST + 1));
+	proxmox_adduser_with_cloned_VM "user" "password"
 
-	echo -e "\nTEST $TEST: sucessfull run"; TEST=$((TEST + 1));
-	proxmox_adduser_with_cloned_VM "test1" "abcd" "1111"
+	echo -e "\nTEST $TEST: 3 parameters check"; TEST=$((TEST + 1));
+	proxmox_adduser_with_cloned_VM "user" "password" "111"
+
+	echo -e "\nTEST $TEST: 4 parameters check"; TEST=$((TEST + 1));
+	proxmox_adduser_with_cloned_VM "user" "password" "111" "222"
+
+	echo -e "\nTEST $TEST: 5 parameters check"; TEST=$((TEST + 1));
+	proxmox_adduser_with_cloned_VM "user" "password" "111" "222" "node"
 fi
 
 if [[ $TEST -eq 2 ]]; then
