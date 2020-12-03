@@ -40,6 +40,8 @@ else \n\
 fi\n\
 \n\n"
 
+code_add_user_with_VM="\nproxmox_add_user_with_VM {l} {p} {vm_id}"
+
 try:
 	filename = sys.argv[1]
 except:
@@ -135,7 +137,7 @@ except IOError:
 preamble = "#!/usr/bin/python3 \n\
 \n\
 LOG=addusers.log\n\
-> ${{LOG}} \n\
+> ${LOG} \n\
 \n\
 nodes[0]=proxmox \n\
 nodes[1]=proxmox2 \n\
@@ -180,7 +182,7 @@ for student in all_students:
 		sys.stdout.write( "\nCreating login '" + login + "'" )
 
 		script_InsertUsers.write( 
-			code_adduser_proxmox.format( l = login , p = password, vm_id = vm_id )  )
+			code_add_user_with_VM.format( l = login , p = password, vm_id = vm_id )  )		
 
 sys.stdout.write( "\n" )
 
