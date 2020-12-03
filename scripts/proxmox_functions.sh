@@ -144,15 +144,17 @@ function proxmox_adduser_with_cloned_VM(){
 
 function proxmox_add_cloned_VM_to_users(){
 
-	echo "`date +%c`: ${FUNCNAME[0]} $*" | ${PROXMOX_FUNCTIONS_LOG_CMD}
+	echo "`date +%c`: ${FUNCNAME[0]} $*"
 
-	TEMP_LOG=`mktemp`
+	TEMP_LOG=/tmp/proxmox_add_cloned_VM_to_users.log
+
+	> ${TEMP_LOG}
 
 	# parameter checking
 
 	if [[ $# -lt 4 ]]; then
 		echo "`date +%c`: [ERROR] Invalid number of arguments: $# - must be at least 2" >> ${TEMP_LOG}
-		cat ${TEMP_LOG} | ${PROXMOX_FUNCTIONS_LOG_CMD}
+		cat ${TEMP_LOG}
 		return
 	fi
 
@@ -178,20 +180,21 @@ function proxmox_add_cloned_VM_to_users(){
 		echo "`date +%c`: VM ${VM_ID} cloned from ${VM_TO_CLONE}. Modifying permissions" >> ${TEMP_LOG}
 	else
 		echo "`date +%c`: [ERROR] Failed to clone VM ${VM_TO_CLONE}" >> ${TEMP_LOG} 
-		cat ${TEMP_LOG} | ${PROXMOX_FUNCTIONS_LOG_CMD}
+		cat ${TEMP_LOG}
 		return 
 	fi	
 
 	# adding cloned VMs to users
-	echo "`date +%c`: Adding ${VM_ID} to selected users" >> ${TEMP_LOG}
+	echo "`date +%c`: Adding VM ${VM_ID} to selected users" >> ${TEMP_LOG}
 
 	for user in $USERS; do
 		pveum aclmod /vms/${VM_ID} -user ${user}@pve -role AlunoCefet
+		pveum aclmod /storage/distros -user ${user}@pve -role AlunoCefet
 		if [[ $? -eq 0 ]]; then 
-			echo "`date +%c`: Added VM '${VM_ID}' to '$user'" >> ${TEMP_LOG}
+			echo "`date +%c`: Added VM '${VM_ID}' to '${user}'" >> ${TEMP_LOG}
 		else
 			echo "`date +%c`: [ERROR] Failed to add VM '${VM_ID}' to '$user'" >> ${TEMP_LOG}		
-		fi		
+		fi
 	done
 
 	# if NODE_TO_MIGRATE is different than 'none', migrate it to specified node
@@ -203,12 +206,11 @@ function proxmox_add_cloned_VM_to_users(){
 			echo "`date +%c`: Migration concluded" >> ${TEMP_LOG} 
 		else
 			echo "`date +%c`: [ERROR] couldn't migrate '${VM_ID}' to '${NODE_TO_MIGRATE}'" >> ${TEMP_LOG}
-			cat ${TEMP_LOG} | ${PROXMOX_FUNCTIONS_LOG_CMD}
 			return
 		fi
 	fi
 
-	cat ${TEMP_LOG} | ${PROXMOX_FUNCTIONS_LOG_CMD}
+	cat ${TEMP_LOG}
 	
 	return;
 }
