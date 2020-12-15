@@ -53,6 +53,7 @@ mysql-server
 mysql-workbench
 nfs-common
 nfs-kernel-server
+okular
 openjdk-8-jdk
 openssl
 php
