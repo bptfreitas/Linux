@@ -1,6 +1,13 @@
 #!/bin/bash
 
-INSTALLED_PKGS=$HOME/Linux/pkgs/Ubuntu/16.04/packages
+
+env | grep -q "$INSTALLED_PKGS"
+
+if [[ $? -ne 0 ]]; then 
+	echo "[ERROR] $INSTALLED_PKGS env variable not set" > /dev/stdeer
+	exit -1
+fi
+
 HISTORY_DIR=`dirname $INSTALLED_PKGS`/history
 HISTORY=$HISTORY_DIR/packages-`date +"%Y-%m-%d__%H-%M-%S"`
 
