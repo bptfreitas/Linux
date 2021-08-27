@@ -18,7 +18,6 @@ function proxmox_adduser(){
 
 	local total_proxmox_nodes=${#PROXMOX_NODES[@]}
 
-
 	if [[ $# -ne 3 ]]; then
 		echo "`date +%c`: [ERROR] Invalid number of arguments: $#";
 		return -1
@@ -100,12 +99,19 @@ function proxmox_adduser_with_cloned_VM(){
 	local VM_TO_CLONE=$3
 	local VM_ID=$4
 	local NODE_TO_MIGRATE=$5
+	local COMMENT="$6"
+
+	if [[ -n "$COMMENT"  ]]; then 
+		COMMENT="--comment \"$COMMENT\""
+	else
+		COMMENT="";
+	fi
 
 	# starting script
 
 	echo "`date +%c`: Adding user '${USERNAME}' to proxmox"
 	
-	pveum useradd ${USERNAME}@pve --password ${PASSWORD};
+	pveum useradd ${USERNAME}@pve --password ${PASSWORD} ${COMMENT};
 	if [[ $? -eq 0 ]]; then
 		echo -e "`date +%c`: User added. Cloning VM ${VM_TO_CLONE} to ${VM_ID} " >> ${TEMP_LOG}
 	else 
@@ -141,7 +147,7 @@ function proxmox_adduser_with_cloned_VM(){
 		fi	
 	fi
 
-	cat ${TEMP_LOG}
+	# cat ${TEMP_LOG}
 }
 
 function proxmox_add_cloned_VM_to_users(){
