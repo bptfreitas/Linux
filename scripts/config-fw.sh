@@ -216,6 +216,9 @@ open)
             sudo iptables -I OUTPUT ${output_rule} -d 52.120.0.0/14 -j ACCEPT         
             ;; # end: open msteams
 
+        site) 
+            
+            ;;
         *)
             echo "Error: invalid program to allow through firewall ($program)"
             exit -1
