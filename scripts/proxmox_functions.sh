@@ -80,7 +80,7 @@ function proxmox_add_cloned_VM(){
 	tail -n  ${PROXMOX_FUNCTIONS_LOG}
 }
 
-function proxmox_adduser_with_cloned_VM(){
+function proxmox_addusers_with_cloned_VM(){
 
 	TEMP_LOG=/tmp/proxmox_functions.log
 
@@ -88,18 +88,24 @@ function proxmox_adduser_with_cloned_VM(){
 
 	# error checking 
 
-	if [[ $# -lt 3 ]]; then
+	if [[ $# -lt 6 ]]; then
 		echo "`date +%c`: [ERROR] Invalid number of arguments: $#" >> ${TEMP_LOG}
 		return
 	fi
 
 	# availing parameters
-	local USERNAME=$1
-	local PASSWORD=$2
-	local VM_TO_CLONE=$3
-	local VM_ID=$4
-	local NODE_TO_MIGRATE=$5
-	local COMMENT="$6"
+	local VM_TO_CLONE=$1
+	shift;
+	local VM_ID=$1
+	shift;
+	local NODE_TO_MIGRATE=$1
+	shift;
+	local COMMENT="$1"
+	shift;
+
+	local PASSWORD="$1"
+	shift;
+	local USERS=$*
 
 	if [[ -n "$COMMENT"  ]]; then 
 		COMMENT="--comment \"$COMMENT\""
@@ -109,34 +115,48 @@ function proxmox_adduser_with_cloned_VM(){
 
 	# starting script
 
-	echo "`date +%c`: Adding user '${USERNAME}' to proxmox"
-	
-	pveum useradd ${USERNAME}@pve --password ${PASSWORD} ${COMMENT};
-	if [[ $? -eq 0 ]]; then
-		echo -e "`date +%c`: User added. Cloning VM ${VM_TO_CLONE} to ${VM_ID} " >> ${TEMP_LOG}
-	else 
-		echo "`date +%c`: [ERROR] Failed to add user" >> ${TEMP_LOG}
-		return -1
-	fi
+	echo "`date +%c`: Cloning VM ${VM_TO_CLONE} to ${VM_ID}"
 
 	qm clone ${VM_TO_CLONE} ${VM_ID} --full
 	if [[ $? -eq 0 ]]; then
-		echo "`date +%c`: VM created. Modifying permissions" >> ${TEMP_LOG}
+		echo "`date +%c`: VM created" >> ${TEMP_LOG}
 	else
 		echo "`date +%c`: [ERROR] Failed to clone VM" >> ${TEMP_LOG}
 		return -1
 	fi
 
-	pveum aclmod /vms/${VM_ID} -user ${USERNAME}@pve -role AlunoCefet
-	pveum aclmod /storage/distros -user ${USERNAME}@pve -role AlunoCefet
-	if [[ $? -eq 0 ]]; then 
-		echo "`date +%c`: Permissions changed" >> ${TEMP_LOG}
-	else
-		echo "`date +%c`: [ERROR] Failed to change permissions" >> ${TEMP_LOG}
-		return -1	
-	fi
+	for user in $USERS; do
 
-	if [[ "${NODE_TO_MIGRATE}" != "" ]]; then
+		echo "`date +%c`: Adding user '${user}' to proxmox"
+
+		pveum useradd ${user}@pve --password ${PASSWORD} ${COMMENT};
+		if [[ $? -eq 0 ]]; then
+			echo -e "`date +%c`: User added." >> ${TEMP_LOG}
+		else 
+			echo "`date +%c`: [ERROR] Failed to add user ${user}" >> ${TEMP_LOG}
+			return -1
+		fi		
+
+		echo "`date +%c`: Modifying permissions for ${user}"
+
+		pveum aclmod /vms/${VM_ID} -user ${user}@pve -role AlunoCefet
+		if [[ $? -eq 0 ]]; then 
+			echo "`date +%c`: Added permission to ${user} for VM ${VM_ID}" >> ${TEMP_LOG}
+		else
+			echo "`date +%c`: [ERROR] Failed to change permission" >> ${TEMP_LOG}
+			return -1	
+		fi
+
+		pveum aclmod /storage/distros -user ${user}@pve -role AlunoCefet
+		if [[ $? -eq 0 ]]; then 
+			echo "`date +%c`: Added permission to ${user} for storage ${distros}" >> ${TEMP_LOG}
+		else
+			echo "`date +%c`: [ERROR] Failed to add permission to ${distros} for ${user}" >> ${TEMP_LOG}
+			return -1	
+		fi
+	done
+
+	if [[ "${NODE_TO_MIGRATE}" != "none" ]]; then
 		echo "`date +%c`: Migrating ${VM_ID} to ${NODE_TO_MIGRATE}" >> ${TEMP_LOG} 
 		
 		qm migrate ${VM_ID} ${NODE_TO_MIGRATE}
@@ -190,7 +210,7 @@ function proxmox_add_cloned_VM_to_users(){
 		echo "`date +%c`: [ERROR] Failed to clone VM ${VM_TO_CLONE}" >> ${TEMP_LOG} 
 		cat ${TEMP_LOG}
 		return 
-	fi	
+	fi
 
 	# adding cloned VMs to users
 	echo "`date +%c`: Adding VM ${VM_ID} to selected users" >> ${TEMP_LOG}
