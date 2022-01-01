@@ -1,8 +1,8 @@
 #!/bin/bash
 
 DEBUG=1
-CONF_OUTPUT=0
-WITH_TUN=0
+WITH_OUTPUT=0
+WITH_VPN=0
 
 remove_rules(){
     match="$1"
@@ -29,25 +29,15 @@ do
         --with-output)
             WITH_OUTPUT=1
             shift # past argument
-            ;;
-
-        --without-output)
-            WITH_OUTPUT=0
-            shift # past argument
-            ;;            
+            ;; 
 
         # allows selected incoming traffic from tunnels
-        --with-tun)
+        --with-vpn)
             WITH_VPN=1
             shift # past argument
             ;;
 
-        --without-tun)
-            WITH_VPN=0
-            shift # past argument
-            ;;
-
-        # applications with 
+        # TODO: specify ports to open
         open|close)
             ;;
 
@@ -71,7 +61,7 @@ start)
     sudo iptables -F INPUT
 
     # allow incoming ICMP only through tunnels
-    if [ ${WITH_TUN} -eq 1 ]; then 
+    if [ ${WITH_VPN} -eq 1 ]; then 
         sudo iptables -A INPUT -i tun+ -p icmp -j ACCEPT
     fi
 
@@ -161,8 +151,6 @@ start)
         sudo iptables -P OUTPUT DROP 
     fi
 
-    # allow_sites
-    sudo iptables -P OUTPUT DROP
     ;; # fim: action start
 
 open)
