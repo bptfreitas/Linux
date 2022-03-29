@@ -24,9 +24,9 @@ function proxmox_adduser(){
 	
 	pveum useradd ${USERNAME}@pve --password ${PASSWORD} ${COMMENT};
 	if [[ $? -eq 0 ]]; then
-		echo -e "`date +%c`: User added. Cloning VM ${VM_TO_CLONE} to ${VM_ID} " | ${PROXMOX_FUNCTIONS_LOG_CMD}
+		echo -e "`date +%c`: User ${USERNAME} added"
 	else 
-		echo "`date +%c`: [ERROR] Failed to add user" | ${PROXMOX_FUNCTIONS_LOG_CMD}
+		echo "`date +%c`: [ERROR] Failed to add user"
 		return -1
 	fi
 
@@ -35,7 +35,21 @@ function proxmox_adduser(){
 
 function proxmox_add_cloned_VM(){
 
+	VM_TO_CLONE="$1"
+	VM_ID="$2"
+	NAME="$3"
 
+	if [[ -n $NAME ]]; then
+		NAME="--name \"${NAME}\"";
+	fi
+
+	echo "`date +%c`: Creating VM ${VM_ID} from full clone of VM ${VM_TO_CLONE}"
+
+	qm clone ${VM_TO_CLONE} ${VM_ID} --full ${NAME}
+	if [[ $? -ne 0 ]]; then
+		echo "`date +%c`: [ERROR] Failed to clone VM ${VM_TO_CLONE} to ${VM_ID}"		
+		return -1
+	fi
 }
 
 
