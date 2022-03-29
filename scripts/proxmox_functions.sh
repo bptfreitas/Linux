@@ -29,15 +29,13 @@ function proxmox_adduser(){
 		echo "`date +%c`: [ERROR] Failed to add user"
 		return -1
 	fi
-
-	tail -n  ${PROXMOX_FUNCTIONS_LOG}
 }
 
-function proxmox_add_cloned_VM(){
+function proxmox_clone_VM(){
 
-	VM_TO_CLONE="$1"
-	VM_ID="$2"
-	NAME="$3"
+	local VM_TO_CLONE="$1"
+	local VM_ID="$2"
+	local NAME="$3"
 
 	if [[ -n $NAME ]]; then
 		NAME="--name \"${NAME}\"";
