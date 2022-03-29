@@ -43,7 +43,7 @@ function proxmox_clone_VM(){
 
 	echo "`date +%c`: Creating VM ${VM_ID} from full clone of VM ${VM_TO_CLONE}"
 
-	qm clone ${VM_TO_CLONE} ${VM_ID} --full ${NAME}
+	qm clone ${VM_TO_CLONE} ${VM_ID} ${NAME} --full 
 	if [[ $? -ne 0 ]]; then
 		echo "`date +%c`: [ERROR] Failed to clone VM ${VM_TO_CLONE} to ${VM_ID}"		
 		return -1
