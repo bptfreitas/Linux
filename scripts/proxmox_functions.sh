@@ -48,14 +48,44 @@ function proxmox_clone_VM(){
 		echo "`date +%c`: [ERROR] Failed to clone VM ${VM_TO_CLONE} to ${VM_ID}"		
 		return -1
 	fi
+
+	return 0;
 }
 
 
 function proxmox_add_users_to_VM(){
 
-	TEMP_LOG=/tmp/proxmox_functions.log
+	if [[ $? -lt 3 ]]; then
+		echo "`date +%c`: [ERROR] Invalid number of arguments"
+		return -1;
+	fi
 
-	echo "`date +%c`: $0" >> ${TEMP_LOG}
+	VM_ID=$1
+	shift
+
+	NODE_TO_MIGRATE=$1
+	shift
+
+	USERS=$*
+
+	for user in $USERS; do
+
+		pveum aclmod /vms/${VM_ID} -user ${user}@pve -role AlunoCefet
+
+		# adding selected storages to user
+		for storage in distros; do
+			pveum aclmod /storage/${storage} -user ${user}@pve
+		done			
+
+	done
+	
+	if [[ "${NODE_TO_MIGRATE}" != "none" ]]; then
+		
+		qm migrate ${VM_ID} ${NODE_TO_MIGRATE}
+
+	fi	
+
+	return 0;
 
 }
 	
