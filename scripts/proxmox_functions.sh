@@ -11,6 +11,11 @@ else
 	export PROXMOX_FUNCTIONS_LOG_CMD="sudo tee -a ${PROXMOX_FUNCTIONS_LOG}"
 fi
 
+
+export STORAGES=distros
+
+export VM_PREFIX="TINF_SO"
+
 function proxmox_adduser(){
 	local USERNAME="$1"	
 	local PASSWORD="$2"
@@ -19,16 +24,8 @@ function proxmox_adduser(){
 	if [[ -n $COMMENT ]]; then
 		COMMENT="--comment \"${COMMENT}\"";
 	fi
-
-	echo "`date +%c`: Adding user '${USERNAME}' to proxmox"
 	
 	pveum useradd ${USERNAME}@pve --password ${PASSWORD} ${COMMENT};
-	if [[ $? -eq 0 ]]; then
-		echo -e "`date +%c`: User ${USERNAME} added"
-	else 
-		echo "`date +%c`: [ERROR] Failed to add user"
-		return -1
-	fi
 }
 
 function proxmox_clone_VM(){
@@ -67,6 +64,62 @@ function proxmox_add_users_to_VM(){
 	shift
 
 	USERS=$*
+
+	for user in $USERS; do
+
+		pveum aclmod /vms/${VM_ID} -user ${user}@pve -role AlunoCefet
+
+		# adding selected storages to user
+		for storage in $STORAGES; do
+			pveum aclmod /storage/${storage} -user ${user}@pve
+		done		
+
+	done
+	
+	if [[ "${NODE_TO_MIGRATE}" != "none" ]]; then
+		
+		qm migrate ${VM_ID} ${NODE_TO_MIGRATE}
+
+	fi	
+
+	return 0;
+
+}
+
+
+function proxmox_add_users_to_cloned_VM(){
+
+	if [[ $# -lt 3 ]]; then
+		echo "`date +%c`: [ERROR] Invalid number of arguments"
+		return -1;
+	fi
+
+	VM_TO_CLONE=$1
+	shift
+
+	VM_ID=$1
+	shift
+
+	NODE_TO_MIGRATE=$1
+	shift
+
+	USERS=$*
+
+	echo "VM to clone: ${VM_TO_CLONE}"
+
+	echo "VM ID: ${VM_ID}"
+
+	echo "Node to migrate: ${NODE_TO_MIGRATE}"
+
+	echo "Users: ${USERS}"
+
+	vm_name="${VM_PREFIX}-${VM_ID}"
+
+	echo "VM name: ${vm_name}"
+
+	qm clone ${VM_TO_CLONE} ${VM_ID} --name ${vm_name} --full
+
+	qm snapshot ${VM_ID} estado_inicial
 
 	for user in $USERS; do
 
