@@ -11,10 +11,11 @@ else
 	export PROXMOX_FUNCTIONS_LOG_CMD="sudo tee -a ${PROXMOX_FUNCTIONS_LOG}"
 fi
 
-
 export STORAGES=distros
 
-export VM_PREFIX="TINF_SO"
+export VM_PREFIX="ALUNO"
+
+export VM_ROLE=AlunoCefet
 
 function proxmox_adduser(){
 	local USERNAME="$1"	
@@ -67,7 +68,7 @@ function proxmox_add_users_to_VM(){
 
 	for user in $USERS; do
 
-		pveum aclmod /vms/${VM_ID} -user ${user}@pve -role AlunoCefet
+		pveum aclmod /vms/${VM_ID} -user ${user}@pve -role 
 
 		# adding selected storages to user
 		for storage in $STORAGES; do
@@ -89,7 +90,7 @@ function proxmox_add_users_to_VM(){
 
 function proxmox_add_users_to_cloned_VM(){
 
-	if [[ $# -lt 3 ]]; then
+	if [[ $# -lt 5 ]]; then
 		echo "`date +%c`: [ERROR] Invalid number of arguments"
 		return -1;
 	fi
@@ -98,6 +99,9 @@ function proxmox_add_users_to_cloned_VM(){
 	shift
 
 	VM_ID=$1
+	shift
+
+	VM_PREFIX=$1
 	shift
 
 	NODE_TO_MIGRATE=$1
@@ -113,7 +117,7 @@ function proxmox_add_users_to_cloned_VM(){
 
 	echo "Users: ${USERS}"
 
-	vm_name="${VM_PREFIX}-${VM_ID}"
+	vm_name="${VM_PREFIX}-${USERS// /_}"
 
 	echo "VM name: ${vm_name}"
 
@@ -121,12 +125,13 @@ function proxmox_add_users_to_cloned_VM(){
 
 	qm snapshot ${VM_ID} estado_inicial
 
-	for user in $USERS; do
+	for user in ${USERS}; do
 
+		# adding permission to VM for the user
 		pveum aclmod /vms/${VM_ID} -user ${user}@pve -role AlunoCefet
 
 		# adding selected storages to user
-		for storage in distros; do
+		for storage in ${STORAGES}; do
 			pveum aclmod /storage/${storage} -user ${user}@pve
 		done			
 
@@ -136,10 +141,9 @@ function proxmox_add_users_to_cloned_VM(){
 		
 		qm migrate ${VM_ID} ${NODE_TO_MIGRATE}
 
-	fi	
+	fi
 
 	return 0;
-
 }
 	
 
