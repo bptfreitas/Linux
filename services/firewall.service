@@ -8,7 +8,7 @@ Requires=network.target
 Type=oneshot
 # Restart=always
 RemainAfterExit=yes
-ExecStart=SERVICES_FOLDER/scripts/config-fw.sh start --with-vpn
+ExecStart=SERVICES_FOLDER/scripts/config-fw.sh start
 # ExecStartPost=SERVICES_FOLDER/scripts/config-fw.sh open msteams
 ExecStop=SERVICES_FOLDER/scripts/config-fw.sh stop
 
