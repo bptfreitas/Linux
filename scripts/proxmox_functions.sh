@@ -217,8 +217,6 @@ function proxmox_add_cloned_VM_to_users(){
 			return
 		fi
 	fi
-
-	cat ${TEMP_LOG}
 	
 	return;
 }
