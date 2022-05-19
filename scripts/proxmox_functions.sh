@@ -90,7 +90,7 @@ function proxmox_add_users_to_cloned_VM(){
 
 	if [[ $# -lt 5 ]]; then
 		echo "`date +%c`: [ERROR] Invalid number of arguments"
-		return -1;
+		return 1;
 	fi
 
 	VM_TO_CLONE=$1
@@ -121,24 +121,24 @@ function proxmox_add_users_to_cloned_VM(){
 
 	qm clone ${VM_TO_CLONE} ${VM_ID} --name "${vm_name}" --full
 
-	[[ $? -ne 0 ]] && exit -1;
+	[[ $? -ne 0 ]] && return 1;
 
 	qm snapshot ${VM_ID} estado_inicial
 
-	[[ $? -ne 0 ]] && exit -1;
+	[[ $? -ne 0 ]] && return 1;
 
 	for user in ${USERS}; do
 
 		# adding permission to VM for the user
-		pveum aclmod /vms/${VM_ID} -user ${user}@pve -role ${VM_ROLE}
+		pveum aclmod /vms/${VM_ID} -user ${user}@pve -role AlunoCefet
 
-		[[ $? -ne 0 ]] && exit -1;
+		[[ $? -ne 0 ]] && return 1;
 
 		# adding selected storages to user
-		for storage in ${STORAGES}; do
+		for storage in distros; do
 			pveum aclmod /storage/${storage} -user ${user}@pve
 
-			[[ $? -ne 0 ]] && exit -1;
+			[[ $? -ne 0 ]] && return 1;
 		done			
 
 	done
@@ -147,7 +147,7 @@ function proxmox_add_users_to_cloned_VM(){
 		
 		qm migrate ${VM_ID} ${NODE_TO_MIGRATE}
 
-		[[ $? -ne 0 ]] && exit -1;
+		[[ $? -ne 0 ]] && return 1;
 
 	fi
 
