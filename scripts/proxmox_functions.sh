@@ -121,16 +121,24 @@ function proxmox_add_users_to_cloned_VM(){
 
 	qm clone ${VM_TO_CLONE} ${VM_ID} --name "${vm_name}" --full
 
+	[[ $? -ne 0 ]] && exit -1;
+
 	qm snapshot ${VM_ID} estado_inicial
+
+	[[ $? -ne 0 ]] && exit -1;
 
 	for user in ${USERS}; do
 
 		# adding permission to VM for the user
 		pveum aclmod /vms/${VM_ID} -user ${user}@pve -role ${VM_ROLE}
 
+		[[ $? -ne 0 ]] && exit -1;
+
 		# adding selected storages to user
 		for storage in ${STORAGES}; do
 			pveum aclmod /storage/${storage} -user ${user}@pve
+
+			[[ $? -ne 0 ]] && exit -1;
 		done			
 
 	done
@@ -138,6 +146,8 @@ function proxmox_add_users_to_cloned_VM(){
 	if [[ "${NODE_TO_MIGRATE}" != "none" ]]; then
 		
 		qm migrate ${VM_ID} ${NODE_TO_MIGRATE}
+
+		[[ $? -ne 0 ]] && exit -1;
 
 	fi
 
