@@ -99,7 +99,7 @@ function proxmox_add_users_to_cloned_VM(){
 	VM_ID=$1
 	shift
 
-	VM_PREFIX=$1
+	VM_NAME=$1
 	shift
 
 	NODE_TO_MIGRATE=$1
@@ -115,11 +115,9 @@ function proxmox_add_users_to_cloned_VM(){
 
 	echo "Users: ${USERS}"
 
-	vm_name="${VM_PREFIX}-${USERS// /_}"
+	echo "VM name: ${VM_NAME}"
 
-	echo "VM name: ${vm_name}"
-
-	qm clone ${VM_TO_CLONE} ${VM_ID} --name "${vm_name}" --full
+	qm clone ${VM_TO_CLONE} ${VM_ID} --name "${VM_NAME}" --full
 
 	[[ $? -ne 0 ]] && return 1;
 
@@ -130,13 +128,13 @@ function proxmox_add_users_to_cloned_VM(){
 	for user in ${USERS}; do
 
 		# adding permission to VM for the user
-		pveum aclmod /vms/${VM_ID} -user ${user}@pve -role AlunoCefet
+		pveum aclmod /vms/${VM_ID} -user ${user}@pve -role ${VM_ROLE}
 
 		[[ $? -ne 0 ]] && return 1;
 
 		# adding selected storages to user
-		for storage in distros; do
-			pveum aclmod /storage/${storage} -user ${user}@pve
+		for storage in ${STORAGES}; do
+			pveum aclmod /storage/${storage} -user ${user}@pve -role ${VM_ROLE}
 
 			[[ $? -ne 0 ]] && return 1;
 		done			
