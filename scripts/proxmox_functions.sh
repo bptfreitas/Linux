@@ -13,8 +13,6 @@ fi
 
 export STORAGES=distros
 
-export VM_PREFIX="ALUNO"
-
 export VM_ROLE=AlunoCefet
 
 function proxmox_adduser(){
@@ -121,14 +119,14 @@ function proxmox_add_users_to_cloned_VM(){
 
 	echo "VM name: ${vm_name}"
 
-	qm clone ${VM_TO_CLONE} ${VM_ID} --name ${vm_name} --full
+	qm clone ${VM_TO_CLONE} ${VM_ID} --name "${vm_name}" --full
 
 	qm snapshot ${VM_ID} estado_inicial
 
 	for user in ${USERS}; do
 
 		# adding permission to VM for the user
-		pveum aclmod /vms/${VM_ID} -user ${user}@pve -role AlunoCefet
+		pveum aclmod /vms/${VM_ID} -user ${user}@pve -role ${VM_ROLE}
 
 		# adding selected storages to user
 		for storage in ${STORAGES}; do
