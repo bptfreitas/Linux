@@ -13,8 +13,6 @@ fi
 
 export STORAGES=distros
 
-export VM_PREFIX="ALUNO"
-
 export VM_ROLE=AlunoCefet
 
 function proxmox_adduser(){
@@ -92,7 +90,7 @@ function proxmox_add_users_to_cloned_VM(){
 
 	if [[ $# -lt 5 ]]; then
 		echo "`date +%c`: [ERROR] Invalid number of arguments"
-		return -1;
+		return 1;
 	fi
 
 	VM_TO_CLONE=$1
@@ -101,7 +99,7 @@ function proxmox_add_users_to_cloned_VM(){
 	VM_ID=$1
 	shift
 
-	VM_PREFIX=$1
+	VM_NAME=$1
 	shift
 
 	NODE_TO_MIGRATE=$1
@@ -117,22 +115,28 @@ function proxmox_add_users_to_cloned_VM(){
 
 	echo "Users: ${USERS}"
 
-	vm_name="${VM_PREFIX}-${USERS// /_}"
+	echo "VM name: ${VM_NAME}"
 
-	echo "VM name: ${vm_name}"
+	qm clone ${VM_TO_CLONE} ${VM_ID} --name "${VM_NAME}" --full
 
-	qm clone ${VM_TO_CLONE} ${VM_ID} --name ${vm_name} --full
+	[[ $? -ne 0 ]] && return 1;
 
 	qm snapshot ${VM_ID} estado_inicial
+
+	[[ $? -ne 0 ]] && return 1;
 
 	for user in ${USERS}; do
 
 		# adding permission to VM for the user
-		pveum aclmod /vms/${VM_ID} -user ${user}@pve -role AlunoCefet
+		pveum aclmod /vms/${VM_ID} -user ${user}@pve -role ${VM_ROLE}
+
+		[[ $? -ne 0 ]] && return 1;
 
 		# adding selected storages to user
 		for storage in ${STORAGES}; do
-			pveum aclmod /storage/${storage} -user ${user}@pve
+			pveum aclmod /storage/${storage} -user ${user}@pve -role ${VM_ROLE}
+
+			[[ $? -ne 0 ]] && return 1;
 		done			
 
 	done
@@ -140,6 +144,8 @@ function proxmox_add_users_to_cloned_VM(){
 	if [[ "${NODE_TO_MIGRATE}" != "none" ]]; then
 		
 		qm migrate ${VM_ID} ${NODE_TO_MIGRATE}
+
+		[[ $? -ne 0 ]] && return 1;
 
 	fi
 
