@@ -185,7 +185,8 @@ function proxmox_adduser_with_cloned_VM(){
 	shift
 	local COMMENT=$1
 
-
+	local NAME=""
+	
 	###################
 	# starting script #
 	###################
