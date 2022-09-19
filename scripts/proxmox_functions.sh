@@ -171,6 +171,7 @@ function proxmox_adduser_with_cloned_VM(){
 	########################
 	# parameter definition #
 	########################
+	
 	local VM_TO_CLONE=$1
 	shift
 	local VM_ID=$1
@@ -190,18 +191,21 @@ function proxmox_adduser_with_cloned_VM(){
 	###################
 	if [[ -n ${COMMENT} ]]; then
 		COMMENT="--comment \"${COMMENT}\"";
+		NAME="--name \"${COMMENT}-${USER//\./-}\"";
+	else 
+		NAME="--name \"${USER//\./-}\"";
 	fi
 
 	# adding user
-	echo "`date +%c`: Adding user '${USER}' to proxmox";
+	echo "`date +%c`: Adding user '${USER}' to proxmox" | tee -a ${TEMP_LOG};
 
 	pveum useradd ${USER}@pve --password \"${PASSWORD}\" ${COMMENT};
 	[[ $? -ne 0 ]] && return -1
 
 	# cloning VM
-	echo "`date +%c`: Creating VM ${VM_ID} from full clone of VM ${VM_TO_CLONE}" >> ${TEMP_LOG}
+	echo "`date +%c`: Creating VM ${VM_ID} from full clone of VM ${VM_TO_CLONE}" | tee -a ${TEMP_LOG}
 
-	qm clone ${VM_TO_CLONE} ${VM_ID} --full
+	qm clone ${VM_TO_CLONE} ${VM_ID} ${NAME} --full
 	[[ $? -ne 0 ]] && return -1
 
 	# adding cloned VMs to user
