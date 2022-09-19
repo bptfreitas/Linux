@@ -196,40 +196,24 @@ function proxmox_adduser_with_cloned_VM(){
 	echo "`date +%c`: Adding user '${USER}' to proxmox";
 
 	pveum useradd ${USER}@pve --password \"${PASSWORD}\" ${COMMENT};
-	if [[ $? -ne 0 ]]; then
-		echo "`date +%c`: [ERROR] Failed to add user ${USER}" >> ${TEMP_LOG}
-		return -1;
-	fi
-
+	[[ $? -ne 0 ]] && return -1
 
 	# cloning VM
 	echo "`date +%c`: Creating VM ${VM_ID} from full clone of VM ${VM_TO_CLONE}" >> ${TEMP_LOG}
 
 	qm clone ${VM_TO_CLONE} ${VM_ID} --full
-	if [[ $? -ne 0 ]]; then
-		echo "`date +%c`: [ERROR] Failed to clone VM ${VM_TO_CLONE}" >> ${TEMP_LOG} 
-		tail -2 ${TEMP_LOG};
-		return -1
-	fi
+	[[ $? -ne 0 ]] && return -1
 
 	# adding cloned VMs to user
 	echo "`date +%c`: Adding VM ${VM_ID} to user ${USER}" >> ${TEMP_LOG}
 
 	pveum aclmod /vms/${VM_ID} -user ${USER}@pve -role AlunoCefet
-	if  [[ $? -ne 0 ]]; then 
-		echo "`date +%c`: [ERROR] Failed to add VM '${VM_ID}' to '$user'" >> ${TEMP_LOG}
-		tail -2 ${TEMP_LOG}
-		return -1;
-	fi
-
+	[[ $? -ne 0 ]] && return -1
+	
 	# adding selected storages to user
 	for storage in distros; do
 		pveum aclmod /storage/${storage} -user ${USER}@pve -role AlunoCefet
-		if  [[ $? -ne 0 ]]; then 
-			echo "`date +%c`: [ERROR] Failed to add storage '${storage}' to '$USER'" >> ${TEMP_LOG}
-			tail -2 ${TEMP_LOG}
-			return -1;
-		fi
+		[[ $? -ne 0 ]] && return -1
 	done
 
 	# if NODE_TO_MIGRATE is different than 'none', migrate it to specified node
@@ -237,11 +221,7 @@ function proxmox_adduser_with_cloned_VM(){
 		echo "`date +%c`: Migrating VM '${VM_ID}' to ${NODE_TO_MIGRATE}" >> ${TEMP_LOG}
 		
 		qm migrate ${VM_ID} ${NODE_TO_MIGRATE}
-		if [[ $? -ne 0 ]]; then
-			echo "`date +%c`: [ERROR] couldn't migrate '${VM_ID}' to '${NODE_TO_MIGRATE}'" >> ${TEMP_LOG}
-			tail -2 ${TEMP_LOG}
-			return -1
-		fi
+		[[ $? -ne 0 ]] && return -1 
 	fi
 	
 	return 0;
