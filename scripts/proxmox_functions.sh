@@ -158,6 +158,8 @@ function proxmox_adduser_with_cloned_VM(){
 	echo "`date +%c`: ${FUNCNAME[0]} $*"
 
 	TEMP_LOG=/tmp/proxmox_add_cloned_VM_to_users.log
+	
+	set -x
 
 	> ${TEMP_LOG}
 
@@ -228,6 +230,8 @@ function proxmox_adduser_with_cloned_VM(){
 		qm migrate ${VM_ID} ${NODE_TO_MIGRATE}
 		[[ $? -ne 0 ]] && return -1 
 	fi
+	
+	set +x
 	
 	return 0;
 }
