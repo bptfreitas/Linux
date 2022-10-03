@@ -113,7 +113,7 @@ function proxmox_add_users_to_cloned_VM(){
 	local VM_NAME=""
 
 	if [[ -n ${COMMENT} ]]; then
-		VM_NAME="--name ${COMMENT}-${USER//\./-}";
+		VM_NAME="--name ${COMMENT}-${USERS//\./-}"
 		COMMENT="--comment \"${COMMENT}\"";
 	else 
 		VM_NAME="--name \"${USER//\./-}\"";
