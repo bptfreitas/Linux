@@ -129,7 +129,7 @@ function proxmox_add_users_to_cloned_VM(){
 
 	echo "VM name: ${VM_NAME}"
 
-	qm clone ${VM_TO_CLONE} ${VM_ID} --name "${VM_NAME}" --full
+	qm clone ${VM_TO_CLONE} ${VM_ID} ${VM_NAME} --full
 
 	[[ $? -ne 0 ]] && return 1;
 
