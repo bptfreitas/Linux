@@ -93,19 +93,19 @@ function proxmox_add_users_to_cloned_VM(){
 		return 1;
 	fi
 
-	VM_TO_CLONE=$1
+	local VM_TO_CLONE=$1
 	shift
 
-	VM_ID=$1
+	local VM_ID=$1
 	shift
 
-	COMMENT=$1
+	local COMMENT=$1
 	shift
 
-	NODE_TO_MIGRATE=$1
+	local NODE_TO_MIGRATE=$1
 	shift
 
-	USERS=$*
+	local USERS=$*
 
 	###################
 	# starting script #
