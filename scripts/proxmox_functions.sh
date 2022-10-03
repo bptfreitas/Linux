@@ -99,7 +99,7 @@ function proxmox_add_users_to_cloned_VM(){
 	local VM_ID=$1
 	shift
 
-	local COMMENT=$1
+	local VM_NAME_PREFIX=$1
 	shift
 
 	local NODE_TO_MIGRATE=$1
@@ -111,7 +111,7 @@ function proxmox_add_users_to_cloned_VM(){
 	# starting script #
 	###################
 
-	VM_NAME="${COMMENT}-${USERS//\./-}"
+	VM_NAME="${VM_NAME_PREFIX}-${USERS//\./-}"
 
 	echo "VM to clone: ${VM_TO_CLONE}"
 
@@ -121,11 +121,9 @@ function proxmox_add_users_to_cloned_VM(){
 
 	echo "Users: ${USERS}"
 
-	echo "Comment: ${COMMENT}"
-
 	echo "VM name: ${VM_NAME}"
 
-	qm clone ${VM_TO_CLONE} ${VM_ID} --name ${VM_NAME} --comment ${COMMENT} --full
+	qm clone ${VM_TO_CLONE} ${VM_ID} --name ${VM_NAME} --full
 
 	[[ $? -ne 0 ]] && return 1;
 
