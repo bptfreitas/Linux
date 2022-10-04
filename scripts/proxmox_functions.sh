@@ -107,6 +107,8 @@ function proxmox_add_users_to_cloned_VM(){
 
 	local USERS=$*
 
+	# TODO: Small parameter checking - all of them must not be empty to continue
+
 	###################
 	# starting script #
 	###################
@@ -243,6 +245,32 @@ function proxmox_adduser_with_cloned_VM(){
 	set +x
 	
 	return 0;
+}
+
+# This script writes a shutdown routine on /root/proxmox_shutdown_VMs.sh
+# By default, it will run on 2 AM each day, shutting down all VMs on the file /root/VMs_to_shutdown.txt
+
+function proxmox_create_VM_shutdown_routine(){
+
+	local TMP_SCRIPT=`mktemp`
+
+	echo "#!/bin/bash \
+	\
+	for VM in /root/VMs_to_shutdown.txt; do \
+
+		qm shutdown \$VM --forceStop 1 \
+
+	done \
+	" > $TMP_SCRIPT
+
+	sudo mv $TMP_SCRIPT /root/proxmox_shutdown_VMs.sh
+
+	[[ $? -ne 0 ]] && exit 1
+
+	sudo chmod +x /root/proxmox_shutdown_VMs.sh
+
+	[[ $? -ne 0 ]] && exit 1
+
 }
 
 if [[ $TEST -eq 1 ]]; then
