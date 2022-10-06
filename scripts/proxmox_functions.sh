@@ -113,7 +113,7 @@ function proxmox_add_users_to_cloned_VM(){
 	# starting script #
 	###################
 
-	VM_NAME="${VM_NAME_PREFIX}-${USERS//\./-}"
+	VM_NAME="${VM_NAME_PREFIX}-${USERS//[\. ]/-}"
 
 	echo "VM to clone: ${VM_TO_CLONE}"
 
@@ -204,7 +204,7 @@ function proxmox_adduser_with_cloned_VM(){
 	# starting script #
 	###################
 	if [[ -n ${COMMENT} ]]; then
-		NAME="--name ${COMMENT}-${USER//\./-}";
+		NAME="--name ${COMMENT}-${USER//[\. ]/-}";
 		COMMENT="--comment \"${COMMENT}\"";
 	else 
 		NAME="--name \"${USER//\./-}\"";
