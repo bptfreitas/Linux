@@ -24,6 +24,7 @@ myinstall_pkgs()
 	if [ -f "$packages" ]; then 
 		ok_pkgs=`mktemp`
 		error_pkgs=missingpackages-`date +"%Y-%m-%d_%H-%M"`.txt
+		
 		for pkg in $(cat "$packages"); do
 			echo -n "Checando $pkg ...";
 		 	apt-get install -q -s -y $pkg > /dev/null

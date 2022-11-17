@@ -24,12 +24,14 @@ case $opt in
 			if [[ -f "${VPN_SESSION}" ]]; then
 				location=`sed -n "${cur_loc}{p;q}" "${VPN_SESSION}"`
 				cur_loc=$(( (cur_loc + 1) % N_loc ))
-				
-				echo "Location: ${location}"
-			else 
-				location=""
-				echo "No location set"
 			fi
+
+			if [[ -n "${location}" ]]; then
+				location=""
+			fi 
+
+			echo "Location: ${location}"
+
 			windscribe connect ${location}
 			windscribe status | grep -q CONNECTED
 			if [[ $? -eq 0 ]]; then
@@ -37,10 +39,9 @@ case $opt in
 
 				#msteams open
 				#sites open	
-				config-fw.sh open msteams -1 3
-				config-fw.sh open sites -1 3
-				config-fw.sh close sites -1 3
-
+				#config-fw.sh open msteams -1 3
+				#config-fw.sh open sites -1 3
+				#config-fw.sh close sites -1 3
 
 				## allow only HTTPS outgoing traffic to pass through VPN 
 				## sudo iptables -I OUTPUT 1 -p tcp --dport 443 -j ACCEPT

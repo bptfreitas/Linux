@@ -50,6 +50,9 @@ while [ "$1" != "" ]; do
 				cp $INSTALLED_PKGS $HISTORY
 				mv /tmp/new $INSTALLED_PKGS
 
+				cd `dirname "$INSTALLED_PKGS"`
+				git commit -m "Updating package list `date +"%Y-%m-%d__%H-%M-%S"`" `basename "$INSTALLED_PKGS"`
+				git push origin master
 			else
 				echo "Package $1 is already on the list."
 			fi
@@ -65,6 +68,10 @@ while [ "$1" != "" ]; do
 				awk "\$1 != \"$1\"" $INSTALLED_PKGS > /tmp/new
 				cp $INSTALLED_PKGS $HISTORY
 				mv /tmp/new $INSTALLED_PKGS
+
+				cd `dirname "$INSTALLED_PKGS"`
+				git commit -m "Updating package list `date +"%Y-%m-%d__%H-%M-%S"`" `basename "$INSTALLED_PKGS"`
+				git push origin master
 
 			else
 				echo "Package $1 is already not on the list."
