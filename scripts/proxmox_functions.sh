@@ -114,12 +114,25 @@ function proxmox_add_users_to_cloned_VM(){
 	# starting script #
 	###################
 
-	readarray -d : -t VM_NAME_ARRAY <<< "${VM_NAME_PREFIX_WITH_SUFFIX}"
+	local VM_NAME_PREFIX=""
+	local VM_NAME_SUFFIX=""
 
-	VM_NAME_PREFIX=${VM_NAME_ARRAY[0]}
-	VM_NAME_SUFFIX=${VM_NAME_ARRAY[1]}
+	# if there is a :, the machine has a suffix
+	if [[ "${VM_NAME_PREFIX_WITH_SUFFIX}" == *":"* ]]; then 
 
-	VM_NAME="${VM_NAME_PREFIX}-${USERS//[\. ]/-}-${VM_NAME_SUFFIX}"
+		readarray -d : -t VM_NAME_ARRAY <<< "${VM_NAME_PREFIX_WITH_SUFFIX}"
+
+		VM_NAME_PREFIX=${VM_NAME_ARRAY[0]}
+		VM_NAME_SUFFIX="-${VM_NAME_ARRAY[1]}"
+
+	else 
+
+		VM_NAME_PREFIX=${VM_NAME_PREFIX_WITH_SUFFIX}
+		VM_NAME_SUFFIX=""
+
+	fi
+
+	VM_NAME="${VM_NAME_PREFIX}-${USERS//[\. ]/-}${VM_NAME_SUFFIX}"
 
 	echo "VM to clone: ${VM_TO_CLONE}"
 
