@@ -132,7 +132,19 @@ function proxmox_add_users_to_cloned_VM(){
 
 	fi
 
+	# removing invalid characters from VM name
 	VM_NAME="${VM_NAME_PREFIX}-${USERS//[\. ]/-}${VM_NAME_SUFFIX}"
+
+	local VM_POOL_CMD=""
+	# if pool is set, add the cloned VM to it
+	if [[ "${VM_POOL}" != "" ]]; then
+
+		# pveum acl modify /pool/dev-pool/ -group developers -role PVEAdmin
+		# pveum acl modify /pool/dev-pool/ -group developers -role ${VM_ROLE}
+
+		VM_POOL_CMD="--pool ${VM_POOL}"
+
+	fi		
 
 	echo "VM to clone: ${VM_TO_CLONE}"
 
@@ -144,9 +156,19 @@ function proxmox_add_users_to_cloned_VM(){
 
 	echo "VM name: ${VM_NAME}"
 
-	qm clone ${VM_TO_CLONE} ${VM_ID} --name ${VM_NAME} --full
+	qm clone ${VM_TO_CLONE} ${VM_ID} \
+		--name ${VM_NAME} \
+		${VM_POOL_CMD} \
+		--full
 
 	[[ $? -ne 0 ]] && return 1;
+
+	# if VM_POOL is set, add the VM to the specified group
+	if [[ "${VM_POOL}" != "" ]]; then
+
+		# pveum acl modify /pool/dev-pool/ -group developers -role PVEAdmin
+
+	fi
 
 	# qm snapshot ${VM_ID} estado_inicial
 
@@ -155,7 +177,7 @@ function proxmox_add_users_to_cloned_VM(){
 	for user in ${USERS}; do
 
 		# adding permission to VM for the user
-		pveum aclmod /vms/${VM_ID} -user ${user}@pve -role ${VM_ROLE}
+		pveum aclmod /vms/${VM_ID} -user ${user}@pve -role ${VM_ROLE} 
 
 		[[ $? -ne 0 ]] && return 1;
 
