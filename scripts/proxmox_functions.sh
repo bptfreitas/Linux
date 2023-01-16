@@ -15,6 +15,8 @@ export PROXMOX_DEFAULT_VM_STORAGES=distros
 
 export PROXMOX_DEFAULT_VM_ROLE=AlunoCefet
 
+export PROXMOX_DEFAULT_VM_POOL=""
+
 function proxmox_adduser(){
 	local USERNAME="$1"	
 	local PASSWORD="$2"
@@ -147,11 +149,11 @@ function proxmox_add_users_to_cloned_VM(){
 
 	local VM_POOL_CMD=""
 	# if pool is set, add the cloned VM to it
-	if [[ "${VM_POOL}" != "" ]]; then
+	if [[ "${PROXMOX_DEFAULT_VM_POOL}" != "" ]]; then
 
-		echo "Pool: ${VM_POOL}"
+		echo "Pool: ${PROXMOX_DEFAULT_VM_POOL}"
 
-		VM_POOL_CMD="--pool ${VM_POOL}"
+		VM_POOL_CMD="--pool ${PROXMOX_DEFAULT_VM_POOL}"
 
 	fi			
 
