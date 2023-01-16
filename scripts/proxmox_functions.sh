@@ -11,9 +11,9 @@ else
 	export PROXMOX_FUNCTIONS_LOG_CMD="sudo tee -a ${PROXMOX_FUNCTIONS_LOG}"
 fi
 
-export STORAGES=distros
+export PROXMOX_DEFAULT_VM_STORAGES=distros
 
-export VM_ROLE=AlunoCefet
+export PROXMOX_DEFAULT_VM_ROLE=AlunoCefet
 
 function proxmox_adduser(){
 	local USERNAME="$1"	
@@ -69,7 +69,7 @@ function proxmox_add_users_to_VM(){
 		pveum aclmod /vms/${VM_ID} -user ${user}@pve -role 
 
 		# adding selected storages to user
-		for storage in $STORAGES; do
+		for storage in ${PROXMOX_DEFAULT_VM_STORAGES}; do
 			pveum aclmod /storage/${storage} -user ${user}@pve
 		done		
 
@@ -169,13 +169,13 @@ function proxmox_add_users_to_cloned_VM(){
 	for user in ${USERS}; do
 
 		# adding permission to VM for the user
-		pveum aclmod /vms/${VM_ID} -user ${user}@pve -role ${VM_ROLE} 
+		pveum aclmod /vms/${VM_ID} -user ${user}@pve -role ${PROXMOX_DEFAULT_VM_ROLE} 
 
 		[[ $? -ne 0 ]] && return 1;
 
 		# adding selected storages to user
-		for storage in ${STORAGES}; do
-			pveum aclmod /storage/${storage} -user ${user}@pve -role ${VM_ROLE}
+		for storage in ${PROXMOX_DEFAULT_VM_STORAGES}; do
+			pveum aclmod /storage/${storage} -user ${user}@pve -role ${PROXMOX_DEFAULT_VM_ROLE}
 
 			[[ $? -ne 0 ]] && return 1;
 		done			
@@ -193,7 +193,17 @@ function proxmox_add_users_to_cloned_VM(){
 	return 0;
 }
 
+function proxmox_mass_vm_destroy(){
 
+	echo "Removing VMs specified on 'vms_to_destroy' ..."
+
+	for vm in $(cat vms_to_destroy); do
+			echo $vm;
+			qm unlock $vm;
+			qm stop $vm;
+			[[ $? -eq 0 ]] && qm destroy $vm; 
+	done
+}
 
 	
 
