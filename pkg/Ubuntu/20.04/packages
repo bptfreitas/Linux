@@ -52,7 +52,6 @@ libsqlite3-dev
 libtool
 libvorbis-dev
 libxss1
-mariadb-server
 mysql-workbench
 nfs-common
 nfs-kernel-server
