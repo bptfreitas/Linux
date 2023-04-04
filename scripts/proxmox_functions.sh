@@ -289,16 +289,13 @@ function proxmox_adduser_with_cloned_VM(){
 function proxmox_create_suspend_routine(){
 
 	cat > /root/proxmox_suspend_VMs.sh <<EOF
+#!/bin/ash
 
-#!/bin/bash
-
-qm list | grep running | awk '{ print \$1 }' > /root/vms_to_hibernate
-
-for VM in \$(cat /root/vms_to_hibernate); do
+for VM in \$(qm list | grep running | awk '{ print \$1 }'); do
 
 	echo "Hibernating \$VM ..."
 
-	qm suspend \$VM --todisk
+	/usr/sbin/qm suspend \$VM --todisk
 
 done
 
