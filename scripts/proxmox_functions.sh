@@ -289,7 +289,7 @@ function proxmox_adduser_with_cloned_VM(){
 function proxmox_create_suspend_routine(){
 
 	cat > /root/proxmox_suspend_VMs.sh <<EOF
-#!/bin/ash
+#!/usr/bin/sh
 
 for VM in \$(qm list | grep running | awk '{ print \$1 }'); do
 
