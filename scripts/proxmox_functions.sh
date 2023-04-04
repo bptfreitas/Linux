@@ -307,7 +307,7 @@ EOF
 	chmod +x /root/proxmox_suspend_VMs.sh
 
 	echo "Add to the crontab file: "
-	echo "0 4 * * * /root/proxmox_suspend_VMs.sh"
+	echo "0 4 * * * /usr/bin/sh /root/proxmox_suspend_VMs.sh"
 
 }
 
