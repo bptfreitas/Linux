@@ -291,11 +291,15 @@ function proxmox_create_suspend_routine(){
 	cat > /root/proxmox_suspend_VMs.sh <<EOF
 #!/usr/bin/sh
 
-for VM in \$(/usr/bin/qm list | grep running | awk '{ print \$1 }'); do
+AWK_BIN=/usr/bin/awk
+GREP_BIN=/usr/bin/grep
+QM_BIN=/usr/sbin/qm
+
+for VM in \$(\${QM_BIN} list | \${GREP_BIN} running | \${AWK_BIN} '{ print \$1 }'); do
 
 	echo "Hibernating \$VM ..."
 
-	/usr/sbin/qm suspend \$VM --todisk
+	\${QM_BIN} suspend \$VM --todisk
 
 done
 
