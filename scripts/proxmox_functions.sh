@@ -288,16 +288,13 @@ function proxmox_adduser_with_cloned_VM(){
 
 function proxmox_create_suspend_routine(){
 
-	local TMP_SCRIPT=`mktemp`
-
-
-	cat > $TMP_SCRIPT <<EOF
+	cat > /root/proxmox_suspend_VMs.sh <<EOF
 
 #!/bin/bash
 
-qm list | grep running | awk '{ print \$1 }' > /tmp/vms_to_hibernate
+qm list | grep running | awk '{ print \$1 }' > /root/vms_to_hibernate
 
-for VM in $(cat /tmp/vms_to_hibernate); do
+for VM in $(cat /root/vms_to_hibernate); do
 
 	echo "Hibernating \$VM ..."
 
@@ -306,8 +303,6 @@ for VM in $(cat /tmp/vms_to_hibernate); do
 done
 
 EOF
-	mv $TMP_SCRIPT /root/proxmox_suspend_VMs.sh
-
 	chmod +x /root/proxmox_suspend_VMs.sh
 
 	echo "Add to the crontab file: "
