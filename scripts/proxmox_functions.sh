@@ -294,7 +294,7 @@ function proxmox_create_suspend_routine(){
 
 qm list | grep running | awk '{ print \$1 }' > /root/vms_to_hibernate
 
-for VM in $(cat /root/vms_to_hibernate); do
+for VM in \$(cat /root/vms_to_hibernate); do
 
 	echo "Hibernating \$VM ..."
 
