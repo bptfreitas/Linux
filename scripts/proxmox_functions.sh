@@ -295,26 +295,32 @@ function proxmox_adduser_with_cloned_VM(){
 # This script writes a shutdown routine on /root/proxmox_shutdown_VMs.sh
 # By default, it will run on 2 AM each day, shutting down all VMs on the file /root/VMs_to_shutdown.txt
 
-function proxmox_create_VM_shutdown_routine(){
+function proxmox_create_suspend_routine(){
 
 	local TMP_SCRIPT=`mktemp`
 
-	echo "#!/bin/bash \
-	\
-	for VM in /root/VMs_to_shutdown.txt; do \
 
-		qm shutdown \$VM --forceStop 1 \
+	cat > $TMP_SCRIPT <<EOF
 
-	done \
-	" > $TMP_SCRIPT
+#!/bin/bash
 
-	sudo mv $TMP_SCRIPT /root/proxmox_shutdown_VMs.sh
+vms_to_hibernate=`mktemp`
 
-	[[ $? -ne 0 ]] && exit 1
+qm list | grep running | awk '{ print \$1 }' > \$vms_to_hibernate
 
-	sudo chmod +x /root/proxmox_shutdown_VMs.sh
+for VM in \$vms_to_hibernate; do
 
-	[[ $? -ne 0 ]] && exit 1
+	qm suspend \$VM --todisk
+
+done
+
+EOF
+	mv $TMP_SCRIPT /root/proxmox_suspend_VMs.sh
+
+	chmod +x /root/proxmox_suspend_VMs.sh
+
+	echo "Add to the crontab file: "
+	echo "0 4 * * * /root/proxmox_suspend_VMs.sh"
 
 }
 
