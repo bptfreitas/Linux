@@ -61,27 +61,18 @@ function proxmox_add_users_to_VM(){
 	VM_ID=$1
 	shift
 
-	NODE_TO_MIGRATE=$1
-	shift
-
 	USERS=$*
 
 	for user in $USERS; do
 
-		pveum aclmod /vms/${VM_ID} -user ${user}@pve -role 
+		pveum aclmod /vms/${VM_ID} -user ${user}@pve -role ${PROXMOX_DEFAULT_VM_ROLE} 
 
 		# adding selected storages to user
 		for storage in ${PROXMOX_DEFAULT_VM_STORAGES}; do
 			pveum aclmod /storage/${storage} -user ${user}@pve
-		done		
+		done
 
 	done
-	
-	if [[ "${NODE_TO_MIGRATE}" != "none" ]]; then
-		
-		qm migrate ${VM_ID} ${NODE_TO_MIGRATE}
-
-	fi	
 
 	return 0;
 
@@ -304,11 +295,11 @@ function proxmox_create_suspend_routine(){
 
 #!/bin/bash
 
-vms_to_hibernate=`mktemp`
+qm list | grep running | awk '{ print \$1 }' > /tmp/vms_to_hibernate
 
-qm list | grep running | awk '{ print \$1 }' > \$vms_to_hibernate
+for VM in $(cat /tmp/vms_to_hibernate); do
 
-for VM in \$vms_to_hibernate; do
+	echo "Hibernating \$VM ..."
 
 	qm suspend \$VM --todisk
 
