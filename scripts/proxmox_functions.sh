@@ -291,7 +291,7 @@ function proxmox_create_suspend_routine(){
 	cat > /root/proxmox_suspend_VMs.sh <<EOF
 #!/usr/bin/sh
 
-for VM in \$(qm list | grep running | awk '{ print \$1 }'); do
+for VM in \$(/usr/bin/qm list | grep running | awk '{ print \$1 }'); do
 
 	echo "Hibernating \$VM ..."
 
