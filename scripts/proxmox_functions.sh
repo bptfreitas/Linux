@@ -313,6 +313,8 @@ EOF
 
 function proxmox_create_stop_routine(){
 
+	> /root/proxmox_stop_VMs.sh
+
 	cat > /root/proxmox_stop_VMs.sh <<EOF
 #!/usr/bin/sh
 
