@@ -283,8 +283,9 @@ function proxmox_adduser_with_cloned_VM(){
 	return 0;
 }
 
-# This script writes a shutdown routine on /root/proxmox_shutdown_VMs.sh
-# By default, it will run on 2 AM each day, shutting down all VMs on the file /root/VMs_to_shutdown.txt
+# This script writes a suspend routine to disk on /root/proxmox_shutdown_VMs.sh
+# This is meant to be ran with crontab 
+# By default, it will run on 4 AM each day, shutting down all VMs on the file /root/VMs_to_shutdown.txt
 
 function proxmox_create_suspend_routine(){
 
@@ -305,11 +306,40 @@ done
 
 EOF
 	chmod +x /root/proxmox_suspend_VMs.sh
-
 	echo "Add to the crontab file: "
 	echo "0 4 * * * /usr/bin/sh /root/proxmox_suspend_VMs.sh"
 
 }
+
+function proxmox_create_stop_routine(){
+
+	cat > /root/proxmox_suspend_VMs.sh <<EOF
+#!/usr/bin/sh
+
+AWK_BIN=/usr/bin/awk
+GREP_BIN=/usr/bin/grep
+QM_BIN=/usr/sbin/qm
+
+for VM in \$(\${QM_BIN} list | \${GREP_BIN} running | \${AWK_BIN} '{ print \$1 }'); do
+
+	echo "Stopping \$VM ..."
+
+	\${QM_BIN} unlock \$VM;
+
+	\${QM_BIN} stop \$VM;
+
+done
+
+EOF
+	chmod +x /root/proxmox_stop_VMs.sh
+
+	echo "Add to the crontab file: "
+	echo "0 4 * * * /usr/bin/sh /root/proxmox_stop_VMs.sh"
+
+}
+
+
+
 
 if [[ $TEST -eq 1 ]]; then
 
