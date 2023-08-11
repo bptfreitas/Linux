@@ -313,7 +313,7 @@ EOF
 
 function proxmox_create_stop_routine(){
 
-	cat > /root/proxmox_suspend_VMs.sh <<EOF
+	cat > /root/proxmox_stop_VMs.sh <<EOF
 #!/usr/bin/sh
 
 AWK_BIN=/usr/bin/awk
