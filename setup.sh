@@ -149,7 +149,7 @@ myinstall_env()
 
 		egrep -o -q "${scripts_folder}" ~/.profile
 		if [ ! $? -eq 0 ]; then
-			echo "export PATH='${scripts_folder}:\$PATH'" >> ~/.profile
+			echo "export PATH=\"${scripts_folder}:\$PATH\"" >> ~/.profile
 			echo "added"
 		else 
 			echo "already added"
