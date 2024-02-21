@@ -322,13 +322,25 @@ AWK_BIN=/usr/bin/awk
 GREP_BIN=/usr/bin/grep
 QM_BIN=/usr/sbin/qm
 
+VM_IGNORE_LIST=/root/vms_to_ignore_stop
+
 for VM in \$(\${QM_BIN} list | \${GREP_BIN} running | \${AWK_BIN} '{ print \$1 }'); do
 
-	echo "Stopping \$VM ..."
+	\${GREP_BIN} -q \${VM} \${VM_IGNORE_LIST}
 
-	\${QM_BIN} unlock \$VM;
+	if [[ \$? -ne 0 ]]; then 
 
-	\${QM_BIN} stop \$VM;
+		echo "Stopping \$VM ..."
+
+		\${QM_BIN} unlock \$VM;
+
+		\${QM_BIN} stop \$VM;
+
+	else 
+
+		echo "VM \${VM} on ignore list, skipping"
+
+	fi
 
 done
 
