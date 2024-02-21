@@ -347,9 +347,24 @@ done
 EOF
 	chmod +x /root/proxmox_stop_VMs.sh
 
-	echo "Add to the crontab file: "
-	echo "0 4 * * * /usr/bin/sh /root/proxmox_stop_VMs.sh"
+	crontab -l > /tmp/crontab.old
 
+	crontab_job="0 4 * * * /usr/bin/sh /root/proxmox_stop_VMs.sh"
+
+	grep -q "${crontab_job}" /tmp/crontab.old
+
+	if [[ $? -eq 0 ]]; then 
+
+		echo "crontab job already exists, skipping step"
+
+	else
+
+		echo "${crontab_job}" | tee -a /tmp/crontab.old
+
+		crontab /tmp/crontab.old
+
+	fi
+	
 }
 
 
