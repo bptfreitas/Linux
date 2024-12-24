@@ -93,7 +93,7 @@ function proxmox_add_users_to_cloned_VM(){
 	shift
 
 	# must be separated by a :
-	local VM_NAME_PREFIX_WITH_SUFFIX=$1
+	local VM_NAME=$1
 	shift
 
 	local NODE_TO_MIGRATE=$1
@@ -106,28 +106,6 @@ function proxmox_add_users_to_cloned_VM(){
 	###################
 	# starting script #
 	###################
-
-	local VM_NAME_PREFIX=""
-	local VM_NAME_SUFFIX=""
-
-	# if there is a :, the machine has a suffix
-	if [[ "${VM_NAME_PREFIX_WITH_SUFFIX}" == *":"* ]]; then 
-
-		readarray -d : -t VM_NAME_ARRAY <<< "${VM_NAME_PREFIX_WITH_SUFFIX}"
-
-		VM_NAME_PREFIX=${VM_NAME_ARRAY[0]}
-		VM_NAME_SUFFIX="-${VM_NAME_ARRAY[1]}"
-
-	else 
-
-		VM_NAME_PREFIX=${VM_NAME_PREFIX_WITH_SUFFIX}
-		VM_NAME_SUFFIX=""
-
-	fi
-
-	# removing invalid characters from VM name
-	VM_NAME="${VM_NAME_PREFIX}-${USERS//[\. ]/-}${VM_NAME_SUFFIX}"
-
 	echo "VM to clone: ${VM_TO_CLONE}"
 
 	echo "VM ID: ${VM_ID}"
