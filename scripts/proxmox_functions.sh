@@ -301,7 +301,9 @@ QM_BIN=/usr/sbin/qm
 
 VM_IGNORE_LIST=/root/vms_to_keep_alive
 
-[[ ! -f \$VM_IGNORE_LIST ]] && > \$VM_IGNORE_LIST
+if [[ ! -f \$VM_IGNORE_LIST ]]; then
+	> \$VM_IGNORE_LIST
+fi
 
 for VM in \$(\${QM_BIN} list | \${GREP_BIN} running | \${AWK_BIN} '{ print \$1 }'); do
 
