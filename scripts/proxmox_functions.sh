@@ -330,7 +330,7 @@ EOF
 
 	crontab -l > /tmp/crontab.old
 
-	crontab_job="50 14 * * * /usr/bin/bash /root/proxmox_stop_running_VMs.sh"
+	crontab_job="52 14 * * * /usr/bin/bash /root/proxmox_stop_running_VMs.sh"
 
 	grep -q "${crontab_job}" /tmp/crontab.old
 
