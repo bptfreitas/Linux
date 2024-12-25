@@ -50,7 +50,6 @@ function proxmox_clone_VM(){
 	return 0;
 }
 
-
 function proxmox_add_users_to_VM(){
 
 	if [[ $? -lt 3 ]]; then
@@ -291,16 +290,18 @@ EOF
 
 function proxmox_create_stop_routine(){
 
-	> /root/proxmox_stop_VMs.sh
+	> /root/proxmox_stop_running_VMs.sh
 
-	cat > /root/proxmox_stop_VMs.sh <<EOF
+	cat > /root/proxmox_stop_running_VMs.sh <<EOF
 #!/usr/bin/sh
 
 AWK_BIN=/usr/bin/awk
 GREP_BIN=/usr/bin/grep
 QM_BIN=/usr/sbin/qm
 
-VM_IGNORE_LIST=/root/vms_to_ignore_stop
+VM_IGNORE_LIST=/root/vms_to_keep_alive
+
+[[ ! -f \$VM_IGNORE_LIST ]] && > \$VM_IGNORE_LIST
 
 for VM in \$(\${QM_BIN} list | \${GREP_BIN} running | \${AWK_BIN} '{ print \$1 }'); do
 
