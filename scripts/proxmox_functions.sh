@@ -324,11 +324,11 @@ for VM in \$(\${QM_BIN} list | \${GREP_BIN} running | \${AWK_BIN} '{ print \$1 }
 done
 
 EOF
-	chmod +x /root/proxmox_stop_VMs.sh
+	chmod a+x /root/proxmox_stop_running_VMs.sh
 
 	crontab -l > /tmp/crontab.old
 
-	crontab_job="0 4 * * * /usr/bin/sh /root/proxmox_stop_VMs.sh"
+	crontab_job="0 4 * * * /usr/bin/sh /root/proxmox_stop_running_VMs.sh"
 
 	grep -q "${crontab_job}" /tmp/crontab.old
 
