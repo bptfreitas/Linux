@@ -293,7 +293,7 @@ function proxmox_create_stop_routine(){
 	> /root/proxmox_stop_running_VMs.sh
 
 	cat > /root/proxmox_stop_running_VMs.sh <<EOF
-#!/usr/bin/sh
+#!/usr/bin/bash
 
 AWK_BIN=/usr/bin/awk
 GREP_BIN=/usr/bin/grep
@@ -330,7 +330,7 @@ EOF
 
 	crontab -l > /tmp/crontab.old
 
-	crontab_job="0 4 * * * /usr/bin/sh /root/proxmox_stop_running_VMs.sh"
+	crontab_job="0 4 * * * /usr/bin/bash /root/proxmox_stop_running_VMs.sh"
 
 	grep -q "${crontab_job}" /tmp/crontab.old
 
