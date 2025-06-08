@@ -50,6 +50,7 @@ libsqlite3-dev
 libtool
 libvorbis-dev
 libxss1
+linux-generic-hwe-24.04
 mysql-server
 nfs-common
 nfs-kernel-server
