@@ -173,6 +173,9 @@ myinstall_env()
 	else
 		echo "Packages file ${packages} not found - aborting"
 	fi
+
+	# creates a folder to put custom latex
+	mkdir -p ~/texmf/tex/latex 
 }
 
 myinstall(){
