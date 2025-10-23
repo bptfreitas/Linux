@@ -306,12 +306,13 @@ function proxmox_balance_VMs(){
 		DIGITS_TO_DISCARD=0
 	fi
 
+	# this line gets all nodes starting with 'n' or 'p'
 	all_nodes=( $( pvecm nodes | awk '{ if (NR > 4) print $3}' | grep -E '^[pn]+.*' | sort ) )
 	total_nodes=${#all_nodes[@]}
 
 	discard=$(( 10**DIGITS_TO_DISCARD ))
 
-	echo "Digits to discard: $DIGITS_TO_DISCARD (divide to $discard)"
+	echo "Digits to discard: $DIGITS_TO_DISCARD (VM id divides to $discard)"
 
 	while read VM; do
 
@@ -320,6 +321,8 @@ function proxmox_balance_VMs(){
 		node_to_migrate=${all_nodes[node_id % total_nodes]}
 
 		echo "VM $VM: migrating to $node_to_migrate"
+
+		qm migrate $VM $node_to_migrate
 	
 	done < $VM_LIST_FILE
 
