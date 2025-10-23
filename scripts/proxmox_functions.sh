@@ -288,6 +288,44 @@ EOF
 
 }
 
+
+# Balances a list of VMs passed in a file by using their IDs
+function proxmox_balance_VMs(){
+
+	VM_LIST_FILE="$1"
+
+	if [[ ! -f $VM_LIST_FILE ]]; then
+		echo "Error: no file passed as parameter!"
+		return 1
+	fi
+
+	# Ignores the rightmost significant digits
+	DIGITS_TO_DISCARD=$2
+
+	if [[ $DIGITS_TO_DISCARD == "" ]]; then
+		DIGITS_TO_DISCARD=0
+	fi
+
+	all_nodes=( $( pvecm nodes | awk '{ if (NR > 4) print $3}' | grep -E '^[pn]+.*' | sort ) )
+	total_nodes=${#all_nodes[@]}
+
+	discard=$(( 10**DIGITS_TO_DISCARD ))
+
+	echo "Digits to discard: $DIGITS_TO_DISCARD (divide to $discard)"
+
+	while read VM; do
+
+		node_id=$(( (VM/discard)%total_nodes ))
+
+		node_to_migrate=${all_nodes[node_id % total_nodes]}
+
+		echo "VM $VM: migrating to $node_to_migrate"
+	
+	done < $VM_LIST_FILE
+
+
+}
+
 function proxmox_create_stop_routine(){
 
 	> /root/proxmox_stop_running_VMs.sh
