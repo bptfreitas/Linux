@@ -290,7 +290,7 @@ EOF
 
 
 # Balances a list of VMs passed in a file by using their IDs
-function proxmox_balance_VMs(){
+function proxmox_balance_server(){
 
 	VM_LIST_FILE="$1"
 
@@ -325,8 +325,24 @@ function proxmox_balance_VMs(){
 		qm migrate $VM $node_to_migrate
 	
 	done < $VM_LIST_FILE
+}
 
+function proxmox_migrate_all_to_node(){
 
+	VM_LIST_FILE="$1"
+
+	if [[ ! -f $VM_LIST_FILE ]]; then
+		echo "Error: no file passed as parameter!"
+		return 1
+	fi	
+
+	while read VM; do
+
+		echo "VM $VM: migrating to $node_to_migrate"
+
+		qm migrate $VM $node_to_migrate
+		
+	done < $VM_LIST_FILE
 }
 
 function proxmox_create_stop_routine(){
