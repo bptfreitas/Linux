@@ -133,7 +133,11 @@ myinstall_aliases()
 
 	echo "alias fw-input='while :; do clear; sudo iptables OUTPUT -vnL; sleep 3; done'" >> \
 		${HOME}/.bash_aliases	
+		
 	echo "alias merge-pdfs='gs -dNOPAUSE -sDEVICE=pdfwrite -sOUTPUTFILE=combined_pdf_files.pdf -dBATCH'" >> \
+		${HOME}/.bash_aliases
+		
+	echo "alias watch-freqs=\"watch -n 2 \"grep '^[c]pu MHz' /proc/cpuinfo"\"\" >> \
 		${HOME}/.bash_aliases
 			
 }
