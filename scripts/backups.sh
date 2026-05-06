@@ -24,6 +24,8 @@ else
     if [[ -f AddOns.zip ]]; then
     
 	    echo "[ `date` ] Backing up AddOns from ESO ... " | tee -a ~/.backups.log
+	    
+	    	rm -f AddOns.zip
     
 		zip -r AddOns AddOns > ~/.backups.log 2>&1
 		cp AddOns.zip  "$Backups_folder/ESO/."
@@ -40,6 +42,8 @@ else
     if [[ -f SavedVariables.zip ]]; then
     
 	    echo "[ `date` ] Backing up SavedVariables from ESO ... " | tee -a ~/.backups.log
+	    
+	    	rm -f SavedVariables.zip
     	
 		zip -r SavedVariables SavedVariables > ~/.backups.log 2>&1
 		cp SavedVariables.zip  "$Backups_folder/ESO/."
