@@ -1,0 +1,18 @@
+[Unit]
+Description=ZRAM Swap
+DefaultDependencies=no
+Before=sysinit.target
+ConditionKernelCommandLine=!nozram
+ 
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStartPre=/sbin/modprobe zram num_devices=1
+ExecStart=/bin/sh -c "echo 4G > /sys/block/zram0/disksize"
+ExecStart=/sbin/mkswap /dev/zram0
+ExecStart=/sbin/swapon /dev/zram0
+ExecStop=/sbin/swapoff /dev/zram0
+ExecStopPost=/sbin/modprobe -r zram
+ 
+[Install]
+WantedBy=sysinit.target
