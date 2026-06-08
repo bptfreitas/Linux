@@ -58,6 +58,18 @@ else
         	    
     fi    
            
+
+	if [[ -f AddOnSettings.txt ]]; then
+
+		echo "[ `date` ] Backing up AddOnSettings.txt from ESO ... " | tee -a ~/.backups.log
+		cp AddOnSettings.txt "$Backups_folder/ESO/."
+			
+	else 
+
+		echo "[ `date` ] Restoring AddOnSettings.txt from ESO ... " | tee -a ~/.backups.log
+		cp "$Backups_folder/ESO/AddOnSettings.txt" .
+
+	fi
 fi
 
 # DDO
