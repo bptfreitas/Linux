@@ -17,6 +17,7 @@ dh-modaliases
 dkms
 docker
 docker.io
+docker-buildx
 doxygen
 execstack
 fakeroot
