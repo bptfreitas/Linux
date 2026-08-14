@@ -16,8 +16,8 @@ dh-make
 dh-modaliases
 dkms
 docker
-docker.io
 docker-buildx
+docker.io
 doxygen
 execstack
 fakeroot
@@ -57,6 +57,7 @@ lm-sensors
 mysql-server
 nfs-common
 nfs-kernel-server
+nmap
 okular
 openjdk-8-jdk
 openssl
