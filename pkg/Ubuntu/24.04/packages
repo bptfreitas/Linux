@@ -74,6 +74,7 @@ scratch
 shutter
 smartmontools
 ssh
+sshpass
 subversion
 texi2html
 texinfo
