@@ -27,9 +27,13 @@ fi
 
 for ip in $(cat /tmp/ips ); do 
     echo "IP: $ip"   
+
+	ssh -t labredes@$ip \
+		-o StrictHostKeyChecking=accept-new \
+		"sudo mkdir /public ; sudo chmod a=rwx /public;"
     
     sshpass -e scp -o StrictHostKeyChecking=accept-new \
     	$FILE2XFER \
-    	labredes@$ip:~/.
+    	labredes@$ip:/public/.
 
 done
