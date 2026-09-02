@@ -25,15 +25,26 @@ if [[ $? -ne 0 ]]; then
     exit 1
 fi
 
+> ./ips_ok.txt 
+
 for ip in $(cat /tmp/ips ); do 
     echo "IP: $ip"   
 
-	ssh -t labredes@$ip \
-		-o StrictHostKeyChecking=accept-new \
-		"sudo mkdir /public ; sudo chmod a=rwx /public;"
+	#ssh -t labredes@$ip \
+	#	-o StrictHostKeyChecking=accept-new \
+    #"sudo mkdir /public ; sudo chmod a=rwx /public;"
     
-    sshpass -e scp -o StrictHostKeyChecking=accept-new \
+    sshpass -e rsync -av --progress --ignore-existing \
+		-e 'ssh -o StrictHostKeyChecking=accept-new' \
     	$FILE2XFER \
     	labredes@$ip:/public/.
+
+	if [[ $? -eq 0 ]]; then
+
+		echo "Connection ok, adding to local IP's"
+
+		echo $ip >> ./ips_ok.txt
+
+	fi		
 
 done
